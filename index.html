@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心境指引卡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        body {
+            font-family: 'Noto Sans TC', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(-45deg, #fde68a, #fca5a5, #818cf8, #6ee7b7);
+            background-size: 400% 400%;
+            animation: gradient-animation 20s ease infinite;
+        }
+        .main-container {
+            background-color: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+        }
+        .card-view {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 1rem 1.5rem 0.75rem;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+        .card-content {
+            padding: 1.5rem;
+        }
+        .card-placeholder {
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 2px dashed #d1d5db;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            height: 100%;
+            min-height: 420px;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 1rem;
+        }
+        .reading-type-card {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid rgba(209, 213, 219, 0.5);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .reading-type-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-color: rgba(167, 139, 250, 0.5);
+        }
+        
+        /* Chakra color gradients for headers */
+        .chakra-grad-red { background: linear-gradient(45deg, #f87171, #ef4444); }
+        .chakra-grad-orange { background: linear-gradient(45deg, #fb923c, #f97316); }
+        .chakra-grad-yellow { background: linear-gradient(45deg, #facc15, #fbbf24); }
+        .chakra-grad-green { background: linear-gradient(45deg, #4ade80, #22c55e); }
+        .chakra-grad-pink { background: linear-gradient(45deg, #f472b6, #ec4899); }
+        .chakra-grad-blue { background: linear-gradient(45deg, #60a5fa, #3b82f6); }
+        .chakra-grad-indigo { background: linear-gradient(45deg, #818cf8, #6366f1); }
+        .chakra-grad-purple { background: linear-gradient(45deg, #a78bfa, #8b5cf6); }
+        .chakra-grad-black { background: linear-gradient(45deg, #374151, #111827); }
+
+        .chakra-tag-red { background-color: #FEF2F2; color: #991B1B; }
+        .chakra-tag-orange { background-color: #FFF7ED; color: #9A3412; }
+        .chakra-tag-yellow { background-color: #FEFCE8; color: #854D0E; }
+        .chakra-tag-green { background-color: #F0FDF4; color: #166534; }
+        .chakra-tag-pink { background-color: #FDF2F8; color: #9D2463; }
+        .chakra-tag-blue { background-color: #EFF6FF; color: #1E40AF; }
+        .chakra-tag-indigo { background-color: #EEF2FF; color: #3730A3; }
+        .chakra-tag-purple { background-color: #F5F3FF; color: #5B21B6; }
+        .chakra-tag-black { background-color: #F3F4F6; color: #1F2937; }
+    </style>
+</head>
+<body class="font-noto-sans-tc">
+
+    <div class="main-container w-full max-w-5xl mx-auto my-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-800">心境指引卡</h1>
+            <p class="text-lg text-gray-600 mt-2">您的線上心靈導航</p>
+        </header>
+
+        <div id="intro-screen" class="flex flex-col items-center">
+             <div class="text-left max-w-2xl text-gray-700 mb-6 bg-white/80 p-6 rounded-lg shadow-sm">
+                <p class="mb-4">心境指引卡是一套專為現代人情緒困擾所設計的療癒卡牌，它結合了：</p>
+                <ul class="list-disc list-inside space-y-2 mb-4">
+                    <li><strong>色彩療癒</strong>：每張卡有不同顏色，對應特定情緒與脈輪；</li>
+                    <li><strong>芳香療法</strong>：每張卡附帶建議精油，用於支持當下情緒；</li>
+                    <li><strong>覺察引導文字</strong>：讓你在混亂或低潮時，有一個可以靠近自己內心的通道。</li>
+                </ul>
+                <p>你可以把它當作一個能說話的情緒鏡子，在你迷茫、卡關或壓力大時，透過抽一張牌、聞一味香氣、讀一句話，來幫助你重新找回平静與力量。</p>
+            </div>
+            <button id="start-draw-button" class="bg-purple-600 text-white font-bold py-3 px-8 rounded-full hover:bg-purple-700 transition-colors shadow-lg text-lg">
+                我们正式开始吧
+            </button>
+        </div>
+
+        <div id="user-info-screen" class="hidden flex flex-col items-center">
+            <div class="text-left max-w-lg w-full text-gray-700 mb-6 bg-white/80 p-8 rounded-lg shadow-sm">
+                <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">在開始之前...</h2>
+                <form id="user-info-form">
+                    <div class="mb-4">
+                        <label for="name" class="block text-gray-700 text-sm font-bold mb-2">你的名字是？</label>
+                        <input type="text" id="name" name="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="age" class="block text-gray-700 text-sm font-bold mb-2">你的年齡是？</label>
+                        <input type="number" id="age" name="age" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+                    <div class="mb-6">
+                        <label for="intention" class="block text-gray-700 text-sm font-bold mb-2">你現在心中最想問的是什麼？</label>
+                        <textarea id="intention" name="intention" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="例如：我該如何面對工作上的挑戰？" required></textarea>
+                    </div>
+                    <div class="flex items-center justify-center">
+                        <button type="submit" class="bg-purple-600 text-white font-bold py-2 px-6 rounded-full hover:bg-purple-700 transition-colors shadow-lg text-lg">
+                            继续
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="draw-screen" class="hidden flex flex-col items-center">
+            <p id="reading-title" class="text-3xl font-bold text-gray-800 mb-2 h-10"></p>
+            <p id="draw-prompt" class="text-lg text-purple-700 font-semibold mb-4 h-6"></p>
+            <div id="card-display-area" class="w-full mb-8"></div>
+            <div id="reading-type-selector" class="mb-6 w-full max-w-2xl">
+                <p class="text-gray-700 mb-4 text-center font-semibold">請選擇您想要的牌陣：</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="reading-type-card" data-type="1">
+                        <div class="text-purple-500 mb-3"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg></div>
+                        <h3 class="text-xl font-bold text-gray-800">单张每日指引</h3>
+                        <p class="text-gray-600 mt-2 text-sm">為今日的你，提供一個簡單、直接的心靈提醒與方向。</p>
+                    </div>
+                    <div class="reading-type-card" data-type="3">
+                        <div class="text-teal-500 mb-3"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></div>
+                        <h3 class="text-xl font-bold text-gray-800">三重心语</h3>
+                        <p class="text-gray-600 mt-2 text-sm">深入探索一個特定問題，看見阻礙、當下狀態與前進的指引。</p>
+                    </div>
+                </div>
+            </div>
+            <div id="archive-section" class="hidden w-full max-w-2xl mt-4 text-left">
+                <h3 class="font-bold text-lg text-gray-700">抽牌紀錄</h3>
+                <p class="text-sm text-gray-600 mb-2">請複製以下內容，並手動發送到指定信箱做存檔。</p>
+                <textarea id="archive-content" rows="8" class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-sm" readonly></textarea>
+                <button id="copy-button" class="mt-2 bg-indigo-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-600 transition-colors w-full">複製紀錄</button>
+            </div>
+            <button id="draw-again-button" class="hidden bg-gray-500 text-white font-bold py-2 px-6 rounded-full hover:bg-gray-600 transition-colors mt-6">
+                重新抽牌
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Card Data ---
+        const cardData = [
+            {id:1,name:"自爱之光",title:"不要在乎别人怎么看你，自己对自己好才重要。",content:"你是一个独一无二、完整的个体。你的价值不需要他人的认可。爱自己是一生最长情的告白，你值得拥有最好的。",color:"粉红",chakra:"心轮",oil:"玫瑰",angelNumber:"7"},
+            {id:2,name:"平和之源",title:"情绪来了就是来了，别让它搞乱你。",content:"情绪是人生的调色板，有高潮也有低谷。感受它们，但不要让它们主宰你。它们只是短暂的访客，不是你的定义。",color:"蓝色",chakra:"喉轮",oil:"绿薄荷",angelNumber:"33"},
+            {id:3,name:"真诚之桥",title:"真心对人好，别人也会对你好。",content:"人际关系是相互的，不仅是你需要他人，他们也需要你。真诚和尊重是最好的礼物。在这个互动中，你也会收获更多。",color:"绿色",chakra:"心轮",oil:"茶树",angelNumber:"111"},
+            {id:4,name:"时光之锚",title:"时间宝贵，用好了就是把生活过好了。",content:"时间是你最宝贵的资源。高效地管理时间，就是高效地管理你的整个生活。问自己：现在的行为是否与你的长期目标相符？",color:"黄色",chakra:"胃轮",oil:"柠檬",angelNumber:"21"},
+            {id:5,name:"成长之翼",title:"从失败中吸取教训。",content:"在职业道路上，持续学习和适应是关键。不要害怕失败，每一次失败都是一个新的开始。问自己：这次失败教会了我什么？",color:"橙色",chakra:"脐轮",oil:"依兰",angelNumber:"9"},
+            {id:6,name:"内在和谐",title:"接纳自己的不完美。",content:"内在的和谐来自于接受自己所有的面向，包括优点和缺点。当你接纳自己，你就能更自由地生活。",color:"紫色",chakra:"顶轮",oil:"薰衣草",angelNumber:"44"},
+            {id:7,name:"情绪解锁",title:"请你好好的面对你的情绪。",content:"情绪不是敌人，而是导师。它们来告诉你哪里需要关注，哪里需要治疗。不要压抑，要理解和释放。",color:"红色",chakra:"海底轮",oil:"玫瑰",angelNumber:"22"},
+            {id:8,name:"共鸣之心",title:"找到让你变好的人，和他们做朋友。",content:"真正的连接来自于共鸣，而不仅仅是相似。找到那些能让你成为更好自己的人，并与他们建立深刻的联系。",color:"绿色",chakra:"心轮",oil:"薑",angelNumber:"333"},
+            {id:9,name:"当下之力",title:"现在就是最重要的时刻。",content:"最有力量的时刻是现在。不要让过去的遗憾或未来的担忧拖你后腿。把握现在，行动起来。",color:"黄色",chakra:"胃轮",oil:"雪松",angelNumber:"1"},
+            {id:10,name:"无限可能",title:"把挑战当作机会。",content:"你的潜能是无限的。不要因为一时的困难或失败而限制自己。每一个挑战都是成长的机会。",color:"橙色",chakra:"脐轮",oil:"佛手柑",angelNumber:"11"},
+            {id:11,name:"灵魂之旅",title:"灵性就是懂得自己，在这世界上为什么存在。",content:"灵性不仅仅是关于信仰或修行，它是关于理解自己在这个宇宙中的位置和目的。",color:"紫色",chakra:"顶轮",oil:"洋甘菊",angelNumber:"777"},
+            {id:12,name:"内在智慧",title:"安静下来，会发现你比想象中更懂事。",content:"你内在的智慧比你想象的要多。当你安静下来，你会听到你的灵魂在对你说什么。",color:"紫色",chakra:"顶轮",oil:"橙花",angelNumber:"55"},
+            {id:13,name:"宇宙连接",title:"觉得孤独就想想，其实你不是一个人。",content:"你不是孤立的存在，你是宇宙的一部分。当你感到孤独或迷茫时，记得与更大的存在连接。",color:"紫色",chakra:"顶轮",oil:"永久花",angelNumber:"88"},
+            {id:14,name:"真我表达",title:"勇敢地表达自己。",content:"真正的自由来自于能够毫无保留地表达自己。不要害怕别人的评判，只有你自己能定义自己。",color:"紫色",chakra:"顶轮",oil:"冷杉",angelNumber:"99"},
+            {id:15,name:"生命之歌",title:"找到自己喜欢的事做，生活就会好起来。",content:"每个人都有他们自己的生命之歌。当你找到它并唱出来，你会发现生活变得更加和谐和美好。",color:"紫色",chakra:"顶轮",oil:"罗勒",angelNumber:"2"},
+            {id:16,name:"自由之翼",title:"懂得爱自己，才能获得真正自由。",content:"真正的自由不仅仅是摆脱物质世界的束缚，更重要的是内心的解放。当你学会接纳和爱自己，释放对自己的批评和限制，你将像一只展翅的鸟，飞得更高、更远。",color:"粉红",chakra:"心轮",oil:"西洋蓍草",angelNumber:"21"},
+            {id:17,name:"心灵平衡",title:"无论外界如何，都要保持内心的平衡。",content:"平衡不仅是一种内在的状态，也是一种生活的艺术。当外界纷扰和情绪波动席卷而来，记得回到你的内心平衡点。在那里，你会找到真正的安宁和力量。",color:"蓝色",chakra:"喉轮",oil:"白千层",angelNumber:"37"},
+            {id:18,name:"爱的回响",title:"给予爱来增加人缘。",content:"爱是宇宙最强大的能量之一，它有回响的力量。当你无条件地给予爱和关心，不仅人际关系会变得更加和谐，这份爱也会如回声般回到你身上。",color:"绿色",chakra:"心轮",oil:"橙花",angelNumber:"29"},
+            {id:19,name:"时间的艺术",title:"懂得时间管理，生活就能过得更顺畅。",content:"时间管理不仅是任务和计划的执行，更是一种生活的艺术。掌握它，你就能和谐地引导生活的节奏。",color:"黄色",chakra:"胃轮",oil:"黑胡椒",angelNumber:"44"},
+            {id:20,name:"无限探索",title:"将你的勇气拿出来。",content:"成长是一个永无止境的旅程。每一次的探索都是一次自我更新，不要害怕未知，它是你成长的最佳土壤。",color:"橙色",chakra:"脐轮",oil:"永久花",angelNumber:"33"},
+            {id:21,name:"自我赞美",title:"去赞美最有价值的自己。",content:"你值得赞美和尊重，尤其是来自自己。每天对自己说：“我是有价值的，我值得最好的。”",color:"粉红",chakra:"心轮",oil:"尤加利",angelNumber:"44"},
+            {id:22,name:"情绪释放",title:"去释放压抑的情绪。",content:"压抑的情绪是内心的负担。找到安全的方式，释放这些情绪，让自己重新获得自由和平衡。",color:"蓝色",chakra:"喉轮",oil:"百里香",angelNumber:"55"},
+            {id:23,name:"真诚沟通",title:"保持你那优秀的真诚。",content:"真诚是人际关系的基石。展示真实的自己，并愿意听取他人，建立真挚的连接。",color:"绿色",chakra:"心轮",oil:"肉桂",angelNumber:"66"},
+            {id:24,name:"时间的礼物",title:"时间是礼物。",content:"时间是你最宝贵的资源。用它去做有意义的事，给自己、给他人、给这个世界。",color:"黄色",chakra:"胃轮",oil:"杜松浆果",angelNumber:"77"},
+            {id:25,name:"勇往直前",title:"把失败作为成长的机会。",content:"失败不是终点，而是成功的起点。每一次的挫折都是通往成功的跳板。",color:"橙色",chakra:"脐轮",oil:"冷杉",angelNumber:"88"},
+            {id:26,name:"内在宝藏",title:"深挖自己找到真正的宝藏，让你更特别。",content:"探索自己内心的深处，你会发现无尽の宝藏。这些宝藏不仅是物质的，更是精神的，它们构成了你独一无二的自我。",color:"粉红",chakra:"心轮",oil:"莱姆",angelNumber:"131"},
+            {id:27,name:"情绪导航",title:"倾听情绪的指引。",content:"情绪是你内心的导航系统，它们像指南针一样，告诉你何时需要调整人生的方向或做出重要的决策。",color:"蓝色",chakra:"喉轮",oil:"茴香",angelNumber:"144"},
+            {id:28,name:"共情",title:"真正的朋友是心里懂心里。",content:"真正的连接来自于共鸣，这种共鸣不仅仅是思想和感情的交流，更是灵魂深处的相通。",color:"绿色",chakra:"心轮",oil:"松红梅",angelNumber:"153"},
+            {id:29,name:"当下的力量",title:"活在当下。",content:"真正的力量存在于当下这一刻。不要让过去的阴影或未来的不确定性剥夺你现在的力量。",color:"黄色",chakra:"胃轮",oil:"芫荽",angelNumber:"162"},
+            {id:30,name:"自我启发",title:"找到改变未来的线索，从了解自己开始。",content:"当你开始深入了解自己，你会发现隐藏在内心深处的启示。这些启示将引导你走向更好的未来。",color:"紫色",chakra:"顶轮",oil:"快乐鼠尾草",angelNumber:"144"},
+            {id:31,name:"自我觉醒",title:"更了解自己以让自我觉醒。",content:"当你开始深入了解自己，你会发现自我觉醒是一场无尽的旅程。每一步都是向内心深处的探索。",color:"靛色",chakra:"眉心轮",oil:"罗勒",angelNumber:"21"},
+            {id:32,name:"内在和平",title:"懂得接受生活，就有内心平静。",content:"内在的和平不仅是一种状态，更是一种选择。它来自于对自己和外界的深刻理解，以及对生活中不可控因素的接受。",color:"蓝色",chakra:"喉轮",oil:"佛手柑",angelNumber:"22"},
+            {id:33,name:"勇气与决断",title:"勇敢地做出决定。",content:"勇气不仅是面对困难，更是在关键时刻做出决断。勇气是你内在力量的体现。",color:"红色",chakra:"海底轮",oil:"岩兰草",angelNumber:"44"},
+            {id:34,name:"心灵平衡",title:"透过冥想来反思。",content:"在忙碌的生活中，找到心灵的平衡是至关重要的。通过冥想和自我反思，让内心达到和谐。",color:"绿色",chakra:"心轮",oil:"天竺葵",angelNumber:"21"},
+            {id:35,name:"月光之舞",title:"跟着内心的感觉走。",content:"在月光下，你的灵魂开始跳舞。这是内心深处的自由与和谐，是你与宇宙的对话。",color:"靛色",chakra:"眉心轮",oil:"甜马鬱蘭",angelNumber:"37"},
+            {id:36,name:"自我尊重",title:"无论如何，都不能少了尊重自己。",content:"尊重自己是自爱的基础。无论在什么情况下，都不要贬低或伤害自己。",color:"粉红",chakra:"心轮",oil:"伊兰",angelNumber:"23"},
+            {id:37,name:"情绪平衡",title:"自己主导自己的情绪。",content:"学会平衡自己的情绪是至关重要的。不要让任何一种情绪过度主导你的生活，以免影响你的决策和人际关系。",color:"蓝色",chakra:"喉轮",oil:"松树",angelNumber:"24"},
+            {id:38,name:"真实自我",title:"做真实的自我。",content:"在人际关系中，做自己是至关重要的。只有真实的自我才能吸引到与你心灵相通的人。",color:"绿色",chakra:"心轮",oil:"佛手柑",angelNumber:"25"},
+            {id:39,name:"时间的价值",title:"珍惜时间。",content:"时间是无法找回的宝贵资源。珍惜每一刻，并用它来实现你真正重要的目标。",color:"黄色",chakra:"胃轮",oil:"葡萄柚",angelNumber:"26"},
+            {id:40,name:"持续学习",title:"永远不停止学习。",content:"成长是一个永无止境的过程。持续学习不仅能丰富你的生活，还是职业成功的关键。",color:"橙色",chakra:"脐轮",oil:"香蜂草",angelNumber:"27"},
+            {id:41,name:"心灵之窗",title:"好好想象自己到底要干嘛。",content:"通过深入的内省和反思，你将打开心灵之窗，更加清晰地了解自己的真实需求、愿望和潜在能力。这是自我成长和心灵觉醒的重要一步。",color:"紫色",chakra:"顶轮",oil:"雪松",angelNumber:"33"},
+            {id:42,name:"生命之舞",title:"不要害怕生活总在变化，把每次变化当成新机会。",content:"生命是一个不断变化的舞蹈，每一个转折都带来新的机会和挑战。接受这些变化，并用全身心的热情去拥抱它们。",color:"靛色",chakra:"眉心轮",oil:"苦橙叶",angelNumber:"528"},
+            {id:43,name:"心灵之音",title:"安静的倾听内心的声音，它会告诉你该怎么做。",content:"当你静下心来，你会听到内心深处的声音，这是你灵性和智慧的回声，它会引导你走向正确的道路。",color:"蓝色",chakra:"喉轮",oil:"迷迭香",angelNumber:"43"},
+            {id:44,name:"自由之声",title:"勇敢地表达自己，感受自由的香气。",content:"当你找到自己的声音并勇敢地表达出来，你会感到一种前所未有的自由和力量。这张牌卡鼓励你不畏困难，大胆地说出你的真实想法。",color:"蓝色",chakra:"喉轮",oil:"柠檬草",angelNumber:"242"},
+            {id:45,name:"自我推销",title:"打开自己的创意。",content:"通过创新和创造，展示自己的独特才华和个性，不仅能吸引更多的关注，还能让你在职场和生活中更加出色。",color:"紫色",chakra:"顶轮",oil:"鼠尾草",angelNumber:"55"},
+            {id:46,name:"自我肯定",title:"给自己勇气与决断。",content:"通过勇气和决断力，面对生活的各种挑战，无论是工作压力还是人际关系，都能从容应对。",color:"黑色",chakra:"海底轮",oil:"洋甘菊",angelNumber:"56"},
+            {id:47,name:"情绪日记",title:"了解自己情绪所想要的。",content:"通过记录自己的情绪和触发因素，你不仅能更好地了解自己，还能找到更有效的应对策略。",color:"黄色",chakra:"胃轮",oil:"绿花白千层",angelNumber:"52"},
+            {id:48,name:"共情",title:"更加深入的沟通。",content:"通过与他人的深度沟通和理解，你不仅能建立更强的人际关系，还能增强自己的社交技巧。",color:"蓝色",chakra:"喉轮",oil:"没药",angelNumber:"54"},
+            {id:49,name:"时间优先级",title:"坚持自己明智的选择。",content:"通过内在的洞察力和反思，明确哪些任务和目标最值得你的时间和精力，从而实现更高的工作效率和生活质量。",color:"靛色",chakra:"眉心轮",oil:"没药",angelNumber:"51"},
+            {id:50,name:"终身学习",title:"不要拒绝成长。",content:"无论你处于生命的哪个阶段，持续的学习和成长都是通往更深层次自我认识和满足的关键。",color:"红色",chakra:"海底轮",oil:"乳香",angelNumber:"111"}
+        ];
+
+        // --- DOM Elements ---
+        const introScreen = document.getElementById('intro-screen');
+        const userInfoScreen = document.getElementById('user-info-screen');
+        const userInfoForm = document.getElementById('user-info-form');
+        const drawScreen = document.getElementById('draw-screen');
+        const startButton = document.getElementById('start-draw-button');
+        const cardDisplayArea = document.getElementById('card-display-area');
+        const readingTypeSelector = document.getElementById('reading-type-selector');
+        const readingTypeCards = document.querySelectorAll('.reading-type-card');
+        const readingTitle = document.getElementById('reading-title');
+        const drawPrompt = document.getElementById('draw-prompt');
+        const drawAgainButton = document.getElementById('draw-again-button');
+        const archiveSection = document.getElementById('archive-section');
+        const archiveContent = document.getElementById('archive-content');
+        const copyButton = document.getElementById('copy-button');
+
+        let currentDeck = [];
+        let drawStep = 0;
+        let sessionData = {};
+
+        // --- Functions ---
+        function getChakraGradClass(chakra, color) {
+            const map = {
+                '海底轮': 'chakra-grad-red', '脐轮': 'chakra-grad-orange', '胃轮': 'chakra-grad-yellow',
+                '心轮': 'chakra-grad-green', '喉轮': 'chakra-grad-blue', '眉心轮': 'chakra-grad-indigo',
+                '顶轮': 'chakra-grad-purple',
+            };
+            if (chakra === '心轮' && color === '粉红') return 'chakra-grad-pink';
+            if (chakra === '海底轮' && color === '黑色') return 'chakra-grad-black';
+            return map[chakra] || 'bg-gray-400';
+        }
+
+        function getChakraTagClass(chakra, color) {
+            const map = {
+                '海底轮': 'chakra-tag-red', '脐轮': 'chakra-tag-orange', '胃轮': 'chakra-tag-yellow',
+                '心轮': 'chakra-tag-green', '喉轮': 'chakra-tag-blue', '眉心轮': 'chakra-tag-indigo',
+                '顶轮': 'chakra-tag-purple',
+            };
+             if (chakra === '心轮' && color === '粉红') return 'chakra-tag-pink';
+            if (chakra === '海底轮' && color === '黑色') return 'chakra-tag-black';
+            return map[chakra] || 'bg-gray-200 text-gray-800';
+        }
+
+        function createCardView(card) {
+            const gradClass = getChakraGradClass(card.chakra, card.color);
+            const tagClass = getChakraTagClass(card.chakra, card.color);
+            const cardEl = document.createElement('div');
+            cardEl.className = `card-view`;
+            cardEl.innerHTML = `
+                <div class="card-header ${gradClass} flex justify-between items-center">
+                    <h3 class="text-2xl font-bold">${card.name}</h3>
+                    <span class="text-3xl font-bold opacity-50">${String(card.id).padStart(2, '0')}</span>
+                </div>
+                <div class="card-content flex-grow flex flex-col">
+                    <blockquote class="my-4 p-4 bg-gray-50 rounded-lg">
+                        <p class="text-lg text-purple-800 italic">“${card.title}”</p>
+                    </blockquote>
+                    <p class="text-gray-700 text-left leading-relaxed flex-grow">${card.content}</p>
+                    <div class="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span>色彩: <strong>${card.color}</strong></span> | 
+                                <span>精油: <strong>${card.oil}</strong></span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                               <span class="font-semibold ${tagClass} px-2 py-1 rounded-full">${card.chakra}</span>
+                               <span>天使數字: <strong>${card.angelNumber}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return cardEl;
+        }
+
+
+        function shuffleDeck() {
+            currentDeck = [...cardData];
+            for (let i = currentDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentDeck[i], currentDeck[j]] = [currentDeck[j], currentDeck[i]];
+            }
+        }
+        
+        function setupThreeCardDraw() {
+            sessionData.readingType = '三重心语';
+            sessionData.cards = [];
+            readingTypeSelector.classList.add('hidden');
+            readingTitle.textContent = '三重心语';
+            cardDisplayArea.innerHTML = '';
+            cardDisplayArea.classList.add('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-6', 'items-stretch');
+
+            const positions = [
+                { id: 'obstacle', title: '什么拖住了我？', subtitle: '(阻碍卡)' },
+                { id: 'present', title: '我正在经历什么？', subtitle: '(当下卡)' },
+                { id: 'guidance', title: '我该如何支持自己？', subtitle: '(引导卡)' }
+            ];
+
+            positions.forEach(pos => {
+                const placeholderWrapper = document.createElement('div');
+                placeholderWrapper.className = 'flex flex-col text-center';
+                placeholderWrapper.innerHTML = `<h3 class="text-xl font-semibold text-gray-700 mb-1">${pos.title}</h3><p class="text-sm text-gray-500 mb-2">${pos.subtitle}</p>`;
+                
+                const placeholder = document.createElement('div');
+                placeholder.className = 'card-placeholder clickable flex-grow';
+                placeholder.dataset.position = pos.id;
+                placeholder.innerHTML = `<button class="bg-white border border-gray-300 text-gray-600 font-semibold py-2 px-5 rounded-full hover:bg-gray-100 hover:border-gray-400 transition-colors">抽牌</button>`;
+                
+                placeholder.addEventListener('click', handleThreeCardDraw);
+                
+                placeholderWrapper.appendChild(placeholder);
+                cardDisplayArea.appendChild(placeholderWrapper);
+            });
+
+            drawStep = 1;
+            updateDrawPrompt();
+        }
+
+        function handleThreeCardDraw(event) {
+            const placeholder = event.currentTarget;
+            const position = placeholder.dataset.position;
+            
+            let shouldDraw = false;
+            if (drawStep === 1 && position === 'present') shouldDraw = true;
+            else if (drawStep === 2 && position === 'obstacle') shouldDraw = true;
+            else if (drawStep === 3 && position === 'guidance') shouldDraw = true;
+
+            if (shouldDraw) {
+                placeholder.removeEventListener('click', handleThreeCardDraw);
+                const card = currentDeck.pop();
+                sessionData.cards.push({ card: card, position: placeholder.previousElementSibling.textContent });
+                const cardView = createCardView(card);
+                placeholder.parentNode.replaceChild(cardView, placeholder);
+                drawStep++;
+                updateDrawPrompt();
+            }
+        }
+
+        function updateDrawPrompt() {
+            switch (drawStep) {
+                case 1:
+                    drawPrompt.textContent = "请先点击中间的『当下卡』";
+                    break;
+                case 2:
+                    drawPrompt.textContent = "接着，请点击左边的『阻碍卡』";
+                    break;
+                case 3:
+                    drawPrompt.textContent = "最后，请点击右边的『引导卡』";
+                    break;
+                default:
+                    drawPrompt.textContent = "牌阵已完成，请感受牌卡带来的指引。";
+                    drawAgainButton.classList.remove('hidden');
+                    displayArchiveArea(sessionData);
+            }
+        }
+
+        function displaySingleCard() {
+            sessionData.readingType = '单张每日指引';
+            sessionData.cards = [];
+            readingTypeSelector.classList.add('hidden');
+            readingTitle.textContent = '您的单张每日指引';
+            drawPrompt.textContent = '';
+            cardDisplayArea.innerHTML = ''; 
+            cardDisplayArea.classList.remove('grid', 'md:grid-cols-3', 'gap-6');
+            cardDisplayArea.classList.add('flex', 'flex-col', 'justify-center', 'items-center', 'gap-4');
+
+            const placeholderWrapper = document.createElement('div');
+            placeholderWrapper.id = 'single-card-wrapper';
+            placeholderWrapper.className = 'w-full md:w-2/3 lg:w-1/2';
+            
+            const placeholder = document.createElement('div');
+            placeholder.id = 'single-card-placeholder';
+            placeholder.className = 'card-placeholder';
+            placeholder.innerHTML = `<button id="draw-single-card-button" class="bg-teal-500 text-white font-bold py-3 px-8 rounded-full hover:bg-teal-600 transition-colors shadow-lg text-lg">抽牌</button>`;
+            placeholderWrapper.appendChild(placeholder);
+            cardDisplayArea.appendChild(placeholderWrapper);
+
+            const drawButton = document.getElementById('draw-single-card-button');
+            drawButton.addEventListener('click', () => {
+                const card = currentDeck.pop();
+                sessionData.cards.push({card: card, position: '每日指引'});
+                const cardView = createCardView(card);
+                
+                const wrapper = document.getElementById('single-card-wrapper');
+                wrapper.innerHTML = ''; // Clear the wrapper
+                wrapper.appendChild(cardView);
+
+                drawPrompt.textContent = '這是您今日的指引。';
+                drawAgainButton.classList.remove('hidden');
+                displayArchiveArea(sessionData);
+            }, { once: true });
+        }
+        
+        function displayArchiveArea(data) {
+            const subject = `心境指引卡 抽牌紀錄 - ${data.name}`;
+            let cardDetails = data.cards.map((item, index) => {
+                const card = item.card;
+                const position = item.position;
+                return `
+牌卡 ${index + 1} (${position}): ${card.name} (ID: ${card.id})
+心向: ${card.title}
+內容: ${card.content}
+--------------------`;
+            }).join('\n');
+
+            const body = `您好，\n\n這是一份來自「心境指引卡」的抽牌紀錄存檔。\n\n**個案資料:**\n姓名: ${data.name}\n年齡: ${data.age || '未提供'}\n意圖: ${data.intention}\n\n**牌陣類型:** ${data.readingType}\n\n**抽牌結果:**\n${cardDetails}\n\n此為系統自動準備的郵件。`;
+            
+            archiveContent.value = body;
+            archiveSection.classList.remove('hidden');
+        }
+
+        function copyToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed"; 
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                copyButton.textContent = '已複製！';
+                setTimeout(() => {
+                    copyButton.textContent = '複製紀錄';
+                }, 2000);
+            } catch (err) {
+                console.error('無法複製文字: ', err);
+                copyButton.textContent = '複製失敗';
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function resetDrawScreen() {
+            // Hide all screens
+            introScreen.classList.add('hidden');
+            userInfoScreen.classList.add('hidden');
+            drawScreen.classList.add('hidden');
+
+            // Show the first screen
+            introScreen.classList.remove('hidden');
+
+            // Reset the state of the draw screen for the next session
+            cardDisplayArea.innerHTML = '';
+            cardDisplayArea.classList.remove('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-6', 'items-stretch', 'flex', 'flex-col', 'justify-center', 'items-center', 'gap-4');
+            readingTitle.textContent = '';
+            drawPrompt.textContent = '';
+            readingTypeSelector.classList.remove('hidden');
+            drawAgainButton.classList.add('hidden');
+            archiveSection.classList.add('hidden');
+            archiveContent.value = '';
+            drawStep = 0;
+            sessionData = {};
+            userInfoForm.reset();
+        }
+
+        // --- Event Listeners ---
+        startButton.addEventListener('click', () => {
+            introScreen.classList.add('hidden');
+            userInfoScreen.classList.remove('hidden');
+        });
+
+        userInfoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            sessionData.name = document.getElementById('name').value;
+            sessionData.age = document.getElementById('age').value;
+            sessionData.intention = document.getElementById('intention').value;
+            
+            userInfoScreen.classList.add('hidden');
+            drawScreen.classList.remove('hidden');
+        });
+
+        readingTypeCards.forEach(button => {
+            button.addEventListener('click', () => {
+                const type = parseInt(button.dataset.type);
+                shuffleDeck();
+                if (type === 1) {
+                    displaySingleCard();
+                } else if (type === 3) {
+                    setupThreeCardDraw();
+                }
+            });
+        });
+
+        drawAgainButton.addEventListener('click', resetDrawScreen);
+        copyButton.addEventListener('click', () => copyToClipboard(archiveContent.value));
+
+    </script>
+</body>
+</html>
