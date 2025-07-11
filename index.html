@@ -3,520 +3,720 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>心境指引卡</title>
+    <title>心境指引卡 - Inner Compass</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        @keyframes gradient-animation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
         body {
-            font-family: 'Noto Sans TC', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(-45deg, #fde68a, #fca5a5, #818cf8, #6ee7b7);
-            background-size: 400% 400%;
-            animation: gradient-animation 20s ease infinite;
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #0c1427;
         }
-        .main-container {
-            background-color: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(10px);
-            border-radius: 1.5rem;
-            padding: 2rem;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a202c; }
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+        .screen {
+            display: none;
+            animation: fadeIn 0.8s ease-in-out;
+            width: 100%;
         }
-        .card-view {
-            background-color: white;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            transition: all 0.3s ease;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card-container { perspective: 1000px; }
+        .card-inner {
+            position: relative;
+            width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
         }
-        .card-header {
-            padding: 1rem 1.5rem 0.75rem;
-            color: white;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-        }
-        .card-content {
-            padding: 1.5rem;
-        }
-        .card-placeholder {
-            background-color: rgba(255, 255, 255, 0.8);
-            border: 2px dashed #d1d5db;
-            color: #6b7280;
-            transition: all 0.2s ease;
+        .card-container.flipped .card-inner { transform: rotateY(180deg); }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
             height: 100%;
-            min-height: 420px;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
             border-radius: 1rem;
+        }
+        .card-back { transform: rotateY(180deg); }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 1000;
+        }
+        .card-front-design {
+            background-color: #111827;
+            border: 1px solid #4b5563;
+            display: flex;
             flex-direction: column;
-            padding: 1rem;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
         }
-        .reading-type-card {
-            background-color: rgba(255, 255, 255, 0.8);
-            border-radius: 1rem;
-            padding: 2rem;
-            text-align: center;
-            border: 1px solid rgba(209, 213, 219, 0.5);
-            transition: all 0.3s ease;
-            cursor: pointer;
+        .card-front-design svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
         }
-        .reading-type-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            border-color: rgba(167, 139, 250, 0.5);
+        .card-front-design .draw-button {
+            position: relative;
+            z-index: 2;
         }
-        
-        /* Chakra color gradients for headers */
-        .chakra-grad-red { background: linear-gradient(45deg, #f87171, #ef4444); }
-        .chakra-grad-orange { background: linear-gradient(45deg, #fb923c, #f97316); }
-        .chakra-grad-yellow { background: linear-gradient(45deg, #facc15, #fbbf24); }
-        .chakra-grad-green { background: linear-gradient(45deg, #4ade80, #22c55e); }
-        .chakra-grad-pink { background: linear-gradient(45deg, #f472b6, #ec4899); }
-        .chakra-grad-blue { background: linear-gradient(45deg, #60a5fa, #3b82f6); }
-        .chakra-grad-indigo { background: linear-gradient(45deg, #818cf8, #6366f1); }
-        .chakra-grad-purple { background: linear-gradient(45deg, #a78bfa, #8b5cf6); }
-        .chakra-grad-black { background: linear-gradient(45deg, #374151, #111827); }
-
-        .chakra-tag-red { background-color: #FEF2F2; color: #991B1B; }
-        .chakra-tag-orange { background-color: #FFF7ED; color: #9A3412; }
-        .chakra-tag-yellow { background-color: #FEFCE8; color: #854D0E; }
-        .chakra-tag-green { background-color: #F0FDF4; color: #166534; }
-        .chakra-tag-pink { background-color: #FDF2F8; color: #9D2463; }
-        .chakra-tag-blue { background-color: #EFF6FF; color: #1E40AF; }
-        .chakra-tag-indigo { background-color: #EEF2FF; color: #3730A3; }
-        .chakra-tag-purple { background-color: #F5F3FF; color: #5B21B6; }
-        .chakra-tag-black { background-color: #F3F4F6; color: #1F2937; }
     </style>
 </head>
-<body class="font-noto-sans-tc">
+<body class="text-gray-200">
 
-    <div class="main-container w-full max-w-5xl mx-auto my-8">
-        <header class="mb-8 text-center">
-            <h1 class="text-4xl font-bold text-gray-800">心境指引卡</h1>
-            <p class="text-lg text-gray-600 mt-2">您的線上心靈導航</p>
-        </header>
+    <div id="app" class="min-h-screen w-full flex items-center justify-center p-4 bg-gradient-to-br from-[#0c1427] to-[#101a3a] relative">
 
-        <div id="intro-screen" class="flex flex-col items-center">
-             <div class="text-left max-w-2xl text-gray-700 mb-6 bg-white/80 p-6 rounded-lg shadow-sm">
-                <p class="mb-4">心境指引卡是一套專為現代人情緒困擾所設計的療癒卡牌，它結合了：</p>
-                <ul class="list-disc list-inside space-y-2 mb-4">
-                    <li><strong>色彩療癒</strong>：每張卡有不同顏色，對應特定情緒與脈輪；</li>
-                    <li><strong>芳香療法</strong>：每張卡附帶建議精油，用於支持當下情緒；</li>
-                    <li><strong>覺察引導文字</strong>：讓你在混亂或低潮時，有一個可以靠近自己內心的通道。</li>
-                </ul>
-                <p>你可以把它當作一個能說話的情緒鏡子，在你迷茫、卡關或壓力大時，透過抽一張牌、聞一味香氣、讀一句話，來幫助你重新找回平静與力量。</p>
-            </div>
-            <button id="start-draw-button" class="bg-purple-600 text-white font-bold py-3 px-8 rounded-full hover:bg-purple-700 transition-colors shadow-lg text-lg">
-                我们正式开始吧
+        <!-- 歡迎頁 (Welcome Screen) -->
+        <div id="welcome-screen" class="screen text-center max-w-2xl">
+            <h2 class="text-2xl md:text-3xl font-medium text-white mb-2">心境指引卡</h2>
+            <h1 class="text-4xl md:text-5xl font-bold text-yellow-400">Inner Compass</h1>
+            <p class="text-lg text-gray-300">mindfulness card</p>
+            <p class="text-lg text-gray-400 my-12">“最好的决策，源于最清澈的内心。”</p>
+            <button onclick="showScreen('intention-screen')" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-12 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                開始探索
             </button>
+            <footer class="absolute bottom-4 left-4 text-xs text-gray-500">
+                Soul Palatte 心旅彩境疗愈馆制作
+            </footer>
         </div>
 
-        <div id="user-info-screen" class="hidden flex flex-col items-center">
-            <div class="text-left max-w-lg w-full text-gray-700 mb-6 bg-white/80 p-8 rounded-lg shadow-sm">
-                <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">在開始之前...</h2>
-                <form id="user-info-form">
-                    <div class="mb-4">
-                        <label for="name" class="block text-gray-700 text-sm font-bold mb-2">你的名字是？</label>
-                        <input type="text" id="name" name="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-                    </div>
-                    <div class="mb-4">
-                        <label for="age" class="block text-gray-700 text-sm font-bold mb-2">你的年齡是？</label>
-                        <input type="number" id="age" name="age" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                    </div>
-                    <div class="mb-6">
-                        <label for="intention" class="block text-gray-700 text-sm font-bold mb-2">你現在心中最想問的是什麼？</label>
-                        <textarea id="intention" name="intention" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="例如：我該如何面對工作上的挑戰？" required></textarea>
-                    </div>
-                    <div class="flex items-center justify-center">
-                        <button type="submit" class="bg-purple-600 text-white font-bold py-2 px-6 rounded-full hover:bg-purple-700 transition-colors shadow-lg text-lg">
-                            继续
-                        </button>
-                    </div>
-                </form>
+        <!-- 意圖設定頁 (Intention Setting Screen) -->
+        <div id="intention-screen" class="screen max-w-lg">
+            <div class="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-gray-700">
+                <h2 class="text-2xl font-bold mb-6 text-center text-yellow-400">設定您的意圖</h2>
+                <div class="space-y-6">
+                    <input id="user-name" type="text" placeholder="請輸入您的名字" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    <textarea id="user-intention" rows="4" placeholder="您現在心中最想釐清的挑戰或決策是什麼？" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"></textarea>
+                </div>
+                <button onclick="handleIntention()" class="w-full mt-8 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                    繼續
+                </button>
             </div>
         </div>
 
-        <div id="draw-screen" class="hidden flex flex-col items-center">
-            <p id="reading-title" class="text-3xl font-bold text-gray-800 mb-2 h-10"></p>
-            <p id="draw-prompt" class="text-lg text-purple-700 font-semibold mb-4 h-6"></p>
-            <div id="card-display-area" class="w-full mb-8"></div>
-            <div id="reading-type-selector" class="mb-6 w-full max-w-2xl">
-                <p class="text-gray-700 mb-4 text-center font-semibold">請選擇您想要的牌陣：</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="reading-type-card" data-type="1">
-                        <div class="text-purple-500 mb-3"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg></div>
-                        <h3 class="text-xl font-bold text-gray-800">单张每日指引</h3>
-                        <p class="text-gray-600 mt-2 text-sm">為今日的你，提供一個簡單、直接的心靈提醒與方向。</p>
+        <!-- 牌陣選擇頁 (Spread Selection Screen) -->
+        <div id="spread-screen" class="screen max-w-4xl text-center">
+             <h2 class="text-3xl font-bold mb-4 text-center text-yellow-400">選擇您的探索方式</h2>
+             <p class="text-gray-400 mb-8">從快速的每日指引，到深度的專業解析，選擇最適合您當下需求的方式。</p>
+             <div class="grid md:grid-cols-2 gap-6 mb-10">
+                <div onclick="selectSpread(1)" class="cursor-pointer bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-gray-700 hover:border-yellow-500 transition-all duration-300 transform hover:-translate-y-2">
+                    <h3 class="text-2xl font-bold mb-3 text-white">今日洞見</h3>
+                    <p class="text-gray-400">快速獲取當日的靈感與提醒，適合每日的靜心指引。</p>
+                </div>
+                <div onclick="selectSpread(3)" class="cursor-pointer bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-gray-700 hover:border-yellow-500 transition-all duration-300 transform hover:-translate-y-2">
+                    <h3 class="text-2xl font-bold mb-3 text-white">情境深度探索</h3>
+                    <p class="text-gray-400">深入剖析特定問題，從阻礙、當下到引導，獲得完整指引。</p>
+                </div>
+             </div>
+             <div class="border-t-2 border-dashed border-gray-700 my-8"></div>
+             <h3 class="text-2xl font-bold text-yellow-400 mb-4">專業療癒師深度解析</h3>
+             <div class="grid md:grid-cols-2 gap-6">
+                 <div onclick="showBookingScreen('生命蓝图解析')" class="cursor-pointer bg-gray-900/70 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-yellow-600/50 hover:border-yellow-500 transition-all duration-300 transform hover:-translate-y-2">
+                    <h3 class="text-2xl font-bold mb-3 text-white">生命蓝图解析</h3>
+                    <p class="text-gray-400 mb-4">以「生命之樹」牌陣為核心，深度探索您的生命根基、內外在挑戰與靈性成長目標。</p>
+                    <span class="text-yellow-500 font-bold">付費諮詢方案</span>
+                </div>
+                <div onclick="showBookingScreen('核心问题透视')" class="cursor-pointer bg-gray-900/70 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-yellow-600/50 hover:border-yellow-500 transition-all duration-300 transform hover:-translate-y-2">
+                    <h3 class="text-2xl font-bold mb-3 text-white">核心问题透视</h3>
+                    <p class="text-gray-400 mb-4">運用「宇宙之網」牌陣，全面解析影響您核心問題的內外在因素，找到突破口。</p>
+                    <span class="text-yellow-500 font-bold">付費諮詢方案</span>
+                </div>
+             </div>
+        </div>
+
+        <!-- 抽牌互動頁 (Reading Screen) -->
+        <div id="reading-screen" class="screen max-w-5xl">
+            <h2 class="text-3xl font-bold mb-2 text-center text-yellow-400">請憑直覺抽牌</h2>
+            <p id="positive-quote" class="text-gray-400 text-center mb-8"></p>
+            <div id="card-placeholders" class="flex flex-wrap justify-center items-start gap-8">
+                <!-- 卡牌位置將由JS動態生成 -->
+            </div>
+        </div>
+
+        <!-- 結果與紀錄頁 (Result & Archive Screen) -->
+        <div id="result-screen" class="screen max-w-5xl">
+            <div class="w-full">
+                <h2 class="text-3xl font-bold mb-8 text-center text-yellow-400">您的心境指引</h2>
+                <div id="result-cards" class="flex flex-wrap justify-center items-start gap-8 mb-8">
+                    <!-- 結果卡牌將由JS動態生成 -->
+                </div>
+                <div class="bg-gray-800/50 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-gray-700 mb-8">
+                    <h3 class="text-xl font-bold mb-4 text-white">本次探索紀錄</h3>
+                    <textarea id="result-archive" readonly class="w-full h-48 bg-gray-900 border border-gray-600 rounded-lg p-4 text-sm font-mono focus:outline-none"></textarea>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                        <div class="flex flex-col gap-4">
+                            <button onclick="copyRecord()" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">複製紀錄</button>
+                            <button onclick="resetApp()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-6 rounded-lg transition-colors">返回首頁</button>
+                        </div>
+                        <button onclick="showScreen('founder-story-screen-main')" class="w-full h-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center text-lg">創辦人故事</button>
                     </div>
-                    <div class="reading-type-card" data-type="3">
-                        <div class="text-teal-500 mb-3"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></div>
-                        <h3 class="text-xl font-bold text-gray-800">三重心语</h3>
-                        <p class="text-gray-600 mt-2 text-sm">深入探索一個特定問題，看見阻礙、當下狀態與前進的指引。</p>
-                    </div>
+                     <p id="copy-feedback" class="text-center text-green-400 mt-4 h-4"></p>
+                </div>
+                
+                <!-- 聯繫區塊 -->
+                <div class="bg-gray-900/70 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-yellow-600/50 text-center">
+                    <h3 class="text-xl font-bold text-white mb-3">想要更深入的個人化解讀嗎？</h3>
+                    <p class="text-gray-400 mb-6">我們的專業療癒師可以為您提供一對一的深度諮詢，<br>協助您整合牌卡指引，轉化為實際的生命力量。</p>
+                    <button onclick="contactViaWhatsAppGeneral()" class="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.75 13.96c.25.13.42.2.55.33.13.13.21.29.29.5.08.21.12.45.12.72 0 .27-.04.51-.12.72-.08.21-.21.37-.33.5-.13.13-.27.23-.45.33-.18.1-.39.15-.63.15-.24.01-.5-.04-.78-.13-.28-.09-.58-.22-.91-.38-.33-.17-.68-.36-1.04-.59-.37-.23-.72-.48-1.06-.77-.34-.29-.65-.59-.91-.91-.26-.32-.48-.65-.65-.99-.17-.34-.29-.68-.37-1.02-.08-.34-.11-.67-.11-1s.04-.63.11-1c.07-.36.19-.7.37-1.02.17-.32.38-.62.65-.91.26-.29.55-.56.91-.82.35-.26.72-.48 1.09-.67.37-.19.74-.33 1.1-.41.37-.08.7-.12 1-.12s.58.04.81.12c.24.08.45.2.63.36.18.17.32.36.41.59.09.23.14.49.14.78 0 .27-.04.52-.12.74-.08.22-.21.4-.37.53-.17.13-.34.2-.55.2-.21 0-.4-.05-.58-.14-.18-.09-.35-.14-.49-.14-.15 0-.29.03-.41.08-.12.05-.24.13-.33.23-.1.1-.18.22-.23.36-.05.14-.08.29-.08.45s.03.29.08.42c.05.13.13.25.23.34.1.1.22.17.34.23.13.06.26.09.41.09.15.01.3-.04.45-.13.15-.09.28-.13.39-.13.21 0 .39.05.54.14zM12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10c-1.85 0-3.59-.5-5.1-1.38l-1.42.71.71-1.42C5.5 18.59 5 16.85 5 15c0-5.52 4.48-10 7-10zm0 1.5c-4.69 0-8.5 3.81-8.5 8.5 0 1.73.52 3.35 1.44 4.74l.13.2.01.02.02.02-1.02 2.04 2.04-1.02.02.02.02.01.2.13c1.39.92 3.01 1.44 4.74 1.44 4.69 0 8.5-3.81 8.5-8.5S16.69 3.5 12 3.5z"></path></svg>
+                        聯繫心旅彩境疗愈馆
+                    </button>
                 </div>
             </div>
-            <div id="archive-section" class="hidden w-full max-w-2xl mt-4 text-left">
-                <h3 class="font-bold text-lg text-gray-700">抽牌紀錄</h3>
-                <p class="text-sm text-gray-600 mb-2">請複製以下內容，並手動發送到指定信箱做存檔。</p>
-                <textarea id="archive-content" rows="8" class="w-full p-2 border border-gray-300 rounded-md bg-gray-50 text-sm" readonly></textarea>
-                <button id="copy-button" class="mt-2 bg-indigo-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-600 transition-colors w-full">複製紀錄</button>
-            </div>
-            <button id="draw-again-button" class="hidden bg-gray-500 text-white font-bold py-2 px-6 rounded-full hover:bg-gray-600 transition-colors mt-6">
-                重新抽牌
-            </button>
         </div>
+        
+        <!-- 預約諮詢頁 (Booking Screen) -->
+        <div id="booking-screen" class="modal-overlay screen">
+            <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 w-full max-w-lg relative">
+                <button onclick="showScreen('spread-screen')" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+                <h2 class="text-2xl font-bold mb-2 text-center text-yellow-400">預約專業諮詢</h2>
+                <p class="text-center text-gray-400 mb-6">您選擇了 <span id="booking-service-name" class="font-bold text-white"></span> 服務</p>
+                <div class="space-y-4">
+                    <input id="booking-name" type="text" placeholder="您的名字" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    <input id="booking-contact" type="text" placeholder="您的聯絡電郵或電話" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    <input id="booking-time" type="text" placeholder="希望預約的日期與時間" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    <textarea id="booking-intention" rows="3" readonly class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none"></textarea>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4 mt-6">
+                    <button onclick="sendBookingEmail()" class="flex-1 flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        透過電郵預約
+                    </button>
+                    <button onclick="sendWhatsAppMessage()" class="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.75 13.96c.25.13.42.2.55.33.13.13.21.29.29.5.08.21.12.45.12.72 0 .27-.04.51-.12.72-.08.21-.21.37-.33.5-.13.13-.27.23-.45.33-.18.1-.39.15-.63.15-.24.01-.5-.04-.78-.13-.28-.09-.58-.22-.91-.38-.33-.17-.68-.36-1.04-.59-.37-.23-.72-.48-1.06-.77-.34-.29-.65-.59-.91-.91-.26-.32-.48-.65-.65-.99-.17-.34-.29-.68-.37-1.02-.08-.34-.11-.67-.11-1s.04-.63.11-1c.07-.36.19-.7.37-1.02.17-.32.38-.62.65-.91.26-.29.55-.56.91-.82.35-.26.72-.48 1.09-.67.37-.19.74-.33 1.1-.41.37-.08.7-.12 1-.12s.58.04.81.12c.24.08.45.2.63.36.18.17.32.36.41.59.09.23.14.49.14.78 0 .27-.04.52-.12.74-.08.22-.21.4-.37.53-.17.13-.34.2-.55.2-.21 0-.4-.05-.58-.14-.18-.09-.35-.14-.49-.14-.15 0-.29.03-.41.08-.12.05-.24.13-.33.23-.1.1-.18.22-.23.36-.05.14-.08.29-.08.45s.03.29.08.42c.05.13.13.25.23.34.1.1.22.17.34.23.13.06.26.09.41.09.15.01.3-.04.45-.13.15-.09.28-.13.39-.13.21 0 .39.05.54.14zM12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10c-1.85 0-3.59-.5-5.1-1.38l-1.42.71.71-1.42C5.5 18.59 5 16.85 5 15c0-5.52 4.48-10 7-10zm0 1.5c-4.69 0-8.5 3.81-8.5 8.5 0 1.73.52 3.35 1.44 4.74l.13.2.01.02.02.02-1.02 2.04 2.04-1.02.02.02.02.01.2.13c1.39.92 3.01 1.44 4.74 1.44 4.69 0 8.5-3.81 8.5-8.5S16.69 3.5 12 3.5z"></path></svg>
+                        透過WhatsApp預約
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 創辦人故事主頁 -->
+        <div id="founder-story-screen-main" class="screen max-w-3xl text-center">
+             <div class="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-gray-700">
+                <h2 class="text-3xl font-bold mb-6 text-yellow-400">創辦人故事</h2>
+                <p class="text-gray-300 mb-8">每一張牌卡的背後，都有一段真實的旅程。<br>點擊下方按鈕，探索這套牌卡誕生的心路歷程。</p>
+                <div class="grid grid-cols-2 grid-rows-3 gap-4 h-80">
+                    <button onclick="showScreen('jeffreys-story-screen')" class="flex items-center justify-center text-center p-4 col-span-1 row-span-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105">
+                        被你发现的故事
+                    </button>
+                    <button onclick="showScreen('entrepreneur-mascot-screen')" class="flex items-center justify-center text-center p-4 col-span-1 row-span-1 bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105">
+                        创业家的吉祥物
+                    </button>
+                    <button onclick="showScreen('healing-space-screen')" class="flex items-center justify-center text-center p-4 col-span-1 row-span-1 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105">
+                        一呼一吸的疗愈馆
+                    </button>
+                    <button onclick="showScreen('qixindongnian-screen')" class="flex items-center justify-center text-center p-4 col-span-2 row-span-1 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105">
+                        你需要的企心动念
+                    </button>
+                </div>
+                 <button onclick="showScreen('result-screen')" class="text-gray-400 hover:text-white transition-colors mt-8">返回</button>
+            </div>
+        </div>
+        
+        <!-- Jeffrey老師的故事頁面 -->
+        <div id="jeffreys-story-screen" class="screen max-w-3xl">
+             <div class="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-gray-700">
+                <h2 class="text-3xl font-bold mb-2 text-center text-yellow-400">被你发现的故事</h2>
+                <h3 class="text-lg text-center text-gray-400 mb-6">卡牌创作者 · Jeffrey老师的故事<br>——一位建筑人与疗愈师的灵魂对话</h3>
+                <div class="text-gray-300 space-y-5 leading-relaxed text-left max-h-[60vh] overflow-y-auto pr-4">
+                    <div class="border-l-4 border-yellow-500 pl-4">
+                        <h4 class="text-xl font-semibold text-white mb-2">🏗️ 起点：从一栋栋房子，到一颗颗心</h4>
+                        <p>我叫锺术德（Jeffrey Chong）。在成为一名情绪疗愈师之前，我是一位建筑公司的老板，带着钢盔、跑在工地，用理性与逻辑处理项目、工人、客户、利润。那时的我，懂得搭建一栋楼，却不懂如何安顿一颗心。</p>
+                        <p>转折点，发生在一场我生命中最巨大的“倒塌”——压力、情绪、关系，像积压的钢筋水泥，终究压垮了我。那是我第一次意识到：原来心，也需要被好好照顾。</p>
+                    </div>
+                    <div class="border-l-4 border-yellow-500 pl-4">
+                        <h4 class="text-xl font-semibold text-white mb-2">🌈 转化：从瓦砾中，长出一张张牌</h4>
+                        <p>疗愈的路，是一条看不见终点的路。我开始接触芳香疗法、色彩疗愈、脉轮、冥想……从最初只是为了自救，到后来，我竟然走进了500多位个案的生命里，陪他们一起找回自己的力量。</p>
+                        <blockquote class="border-l-4 border-gray-500 pl-4 my-4 text-gray-400 italic">“有没有一个方法，可以让人在没有我陪伴的时刻，也能自己找到方向？”</blockquote>
+                        <p>这就是“心境指引卡”的起源。</p>
+                    </div>
+                    <div class="border-l-4 border-yellow-500 pl-4">
+                        <h4 class="text-xl font-semibold text-white mb-2">🃏 诞生：不是工具，而是一场回家的旅程</h4>
+                        <p>“心境指引卡”的第一张牌，是在我和猫总深夜聊天时构思出来的。她曾经说过一句话：</p>
+                        <blockquote class="border-l-4 border-gray-500 pl-4 my-4 text-gray-400 italic">“疗愈的本质，不是改变别人，而是回到自己。”</blockquote>
+                        <p>这句话，我们写成了一张卡。后来，我和Evelyn也加入这场创造之旅，我们把无数真实的疗愈故事，转化成了一张张卡面，用色彩、图像、脉轮与精油能量，让每个人都能不靠别人，就看见自己内在的讯息。</p>
+                        <p>所以你手中的每一张卡，都不是凭空而来。它们来自一个又一个真实的人：焦虑的妈妈、压抑的职场人、孤单的创业者、迷失的恋人、甚至是曾经走不出自己的我。</p>
+                    </div>
+                    <div class="border-l-4 border-yellow-500 pl-4">
+                        <h4 class="text-xl font-semibold text-white mb-2">💌 我的心愿：你不再独行</h4>
+                        <p>我知道，你可能也是在一个需要安慰的时刻，打开了这套卡。我希望，这些文字与图像，不只是“建议”，而是灵魂写给灵魂的一封信。</p>
+                        <blockquote class="border-l-4 border-gray-500 pl-4 my-4 text-gray-400 italic">当你抽到卡，请记得：这是一场与你内在智慧的对话，不是为了得到答案，而是让你记得自己从哪里来，要走往哪里去。</blockquote>
+                        <p>欢迎你进入心旅彩境，也欢迎你，成为这52张牌故事中的一部分。</p>
+                    </div>
+                    <div class="text-right mt-6">
+                        <p>—— 🪶 Jeffrey老师</p>
+                        <p class="text-sm text-gray-400">美国NAHA芳疗导师 / 色彩疗愈师 / 情绪陪伴者</p>
+                        <p class="text-sm text-gray-400">心旅彩境 创办人｜心境指引卡 创作者</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-8">
+                    <button onclick="showScreen('founder-story-screen-main')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors">返回</button>
+                    <button onclick="contactViaWhatsAppGeneral()" class="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.75 13.96c.25.13.42.2.55.33.13.13.21.29.29.5.08.21.12.45.12.72 0 .27-.04.51-.12.72-.08.21-.21.37-.33.5-.13.13-.27.23-.45.33-.18.1-.39.15-.63.15-.24.01-.5-.04-.78-.13-.28-.09-.58-.22-.91-.38-.33-.17-.68-.36-1.04-.59-.37-.23-.72-.48-1.06-.77-.34-.29-.65-.59-.91-.91-.26-.32-.48-.65-.65-.99-.17-.34-.29-.68-.37-1.02-.08-.34-.11-.67-.11-1s.04-.63.11-1c.07-.36.19-.7.37-1.02.17-.32.38-.62.65-.91.26-.29.55-.56.91-.82.35-.26.72-.48 1.09-.67.37-.19.74-.33 1.1-.41.37-.08.7-.12 1-.12s.58.04.81.12c.24.08.45.2.63.36.18.17.32.36.41.59.09.23.14.49.14.78 0 .27-.04.52-.12.74-.08.22-.21.4-.37.53-.17.13-.34.2-.55.2-.21 0-.4-.05-.58-.14-.18-.09-.35-.14-.49-.14-.15 0-.29.03-.41.08-.12.05-.24.13-.33.23-.1.1-.18.22-.23.36-.05.14-.08.29-.08.45s.03.29.08.42c.05.13.13.25.23.34.1.1.22.17.34.23.13.06.26.09.41.09.15.01.3-.04.45-.13.15-.09.28-.13.39-.13.21 0 .39.05.54.14zM12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10c-1.85 0-3.59-.5-5.1-1.38l-1.42.71.71-1.42C5.5 18.59 5 16.85 5 15c0-5.52 4.48-10 7-10zm0 1.5c-4.69 0-8.5 3.81-8.5 8.5 0 1.73.52 3.35 1.44 4.74l.13.2.01.02.02.02-1.02 2.04 2.04-1.02.02.02.02.01.2.13c1.39.92 3.01 1.44 4.74 1.44 4.69 0 8.5-3.81 8.5-8.5S16.69 3.5 12 3.5z"></path></svg>
+                        聯絡我們
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 创业家的吉祥物页面 -->
+        <div id="entrepreneur-mascot-screen" class="screen max-w-3xl">
+             <div class="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-gray-700">
+                <h2 class="text-3xl font-bold mb-2 text-center text-purple-400">💼 给企业家的心灵导航卡</h2>
+                <h3 class="text-lg text-center text-gray-400 mb-6">——55张卡牌 × 你的情绪战略力</h3>
+                <div class="text-gray-300 space-y-6 leading-relaxed text-left max-h-[60vh] overflow-y-auto pr-4">
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-purple-400/50 pb-2">📦 一套完整的心境系统，共55张牌卡：</h4>
+                        <ul class="list-disc list-inside space-y-2 mt-3">
+                            <li><span class="font-bold">50张图像主题卡：</span>每张牌都传递一个关键心念／情绪主题，搭配色彩能量、脉轮定位、引导文字，帮助你快速厘清内在状态。</li>
+                            <li><span class="font-bold">2张空白卡：</span>
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li>🧭「心灵地图」：绘出当前处境与卡点</li>
+                                    <li>🔮「未来之镜」：描绘企业与人生的理想蓝图</li>
+                                </ul>
+                            </li>
+                            <li><span class="font-bold">3张说明卡：</span>📖 使用引导说明</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-purple-400/50 pb-2">🎯 它能帮你解决什么？</h4>
+                        <p>创业不只是管理外在系统，更是整合内在能量。这套卡牌是你专属的“决策前内观工具”，让你在混乱中找方向，在焦虑中做出觉知的选择。</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-purple-400/50 pb-2">✅ 应用情境：</h4>
+                        <ul class="list-disc list-inside space-y-2 mt-3">
+                            <li>关键决策前，抽一张，看清你的动机与情绪夹带</li>
+                            <li>团队冲突后，抽三张，理清你真正想表达的心意</li>
+                            <li>设定目标时，使用“未来之镜”卡，整合感性与理性愿景</li>
+                            <li>每周回顾 / 月计划，用“心灵地图”描绘成长轨迹</li>
+                            <li>企业陪跑课程中，搭配牌阵工具，支持深度对谈与重建信念</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-purple-400/50 pb-2">🌱 为什么这套卡值得你拥有？</h4>
+                        <blockquote class="border-l-4 border-gray-500 pl-4 my-4 text-gray-400 italic">“当一个人可以清晰面对自己的内在，他才能真正成为一位稳重的企业决策者。”</blockquote>
+                        <p>心境指引卡并非神秘学，而是一种帮助企业主将“感觉”转化为“选择”的觉察系统。由建筑背景出身、拥有六年情绪疗愈经验的 Jeffrey 老师，整合500+真实个案与心理、色彩、芳香能量，创作出这套实战性极强的引导工具。</p>
+                        <p>你不需要每天抽牌，但你一定会在关键时刻，想起它。就像一本懂你的“情绪战略手册”。</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-8">
+                    <button onclick="showScreen('founder-story-screen-main')" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors">返回</button>
+                    <button onclick="contactViaWhatsAppGeneral()" class="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.75 13.96c.25.13.42.2.55.33.13.13.21.29.29.5.08.21.12.45.12.72 0 .27-.04.51-.12.72-.08.21-.21.37-.33.5-.13.13-.27.23-.45.33-.18.1-.39.15-.63.15-.24.01-.5-.04-.78-.13-.28-.09-.58-.22-.91-.38-.33-.17-.68-.36-1.04-.59-.37-.23-.72-.48-1.06-.77-.34-.29-.65-.59-.91-.91-.26-.32-.48-.65-.65-.99-.17-.34-.29-.68-.37-1.02-.08-.34-.11-.67-.11-1s.04-.63.11-1c.07-.36.19-.7.37-1.02.17-.32.38-.62.65-.91.26-.29.55-.56.91-.82.35-.26.72-.48 1.09-.67.37-.19.74-.33 1.1-.41.37-.08.7-.12 1-.12s.58.04.81.12c.24.08.45.2.63.36.18.17.32.36.41.59.09.23.14.49.14.78 0 .27-.04.52-.12.74-.08.22-.21.4-.37.53-.17.13-.34.2-.55.2-.21 0-.4-.05-.58-.14-.18-.09-.35-.14-.49-.14-.15 0-.29.03-.41.08-.12.05-.24.13-.33.23-.1.1-.18.22-.23.36-.05.14-.08.29-.08.45s.03.29.08.42c.05.13.13.25.23.34.1.1.22.17.34.23.13.06.26.09.41.09.15.01.3-.04.45-.13.15-.09.28-.13.39-.13.21 0 .39.05.54.14zM12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10c-1.85 0-3.59-.5-5.1-1.38l-1.42.71.71-1.42C5.5 18.59 5 16.85 5 15c0-5.52 4.48-10 7-10zm0 1.5c-4.69 0-8.5 3.81-8.5 8.5 0 1.73.52 3.35 1.44 4.74l.13.2.01.02.02.02-1.02 2.04 2.04-1.02.02.02.02.01.2.13c1.39.92 3.01 1.44 4.74 1.44 4.69 0 8.5-3.81 8.5-8.5S16.69 3.5 12 3.5z"></path></svg>
+                        聯絡我們
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 一呼一吸的疗愈馆页面 -->
+        <div id="healing-space-screen" class="screen max-w-3xl">
+             <div class="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-gray-700">
+                <h2 class="text-3xl font-bold mb-2 text-center text-teal-400">🌿 什么是「心旅彩境疗愈馆」？</h2>
+                <h3 class="text-lg text-center text-gray-400 mb-6">——一处可以安顿情绪、重新找回自己的地方</h3>
+                <div class="text-gray-300 space-y-6 leading-relaxed text-left max-h-[60vh] overflow-y-auto pr-4">
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-teal-400/50 pb-2">🏡 一间不是为了打卡，而是为了回家的空间</h4>
+                        <p>我们不叫自己“中心”或“诊所”，我们更喜欢这个词：“疗愈馆”。</p>
+                        <p>在这里，没有匆忙的疗程、没有冰冷的仪器，只有一个空间，邀请你慢下来、静下来、感觉一下。</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-teal-400/50 pb-2">🌈 四大核心疗愈元素</h4>
+                        <ul class="space-y-3 mt-3">
+                            <li><strong class="text-teal-300">🎨 色彩疗愈：</strong>透过色彩心理、衣着色分析与能量测试，了解你当下的内在状态。</li>
+                            <li><strong class="text-teal-300">🍃 芳香疗法：</strong>我们使用100%纯天然精油，以嗅觉唤醒潜意识、安抚情绪，重建身心连接。</li>
+                            <li><strong class="text-teal-300">🔮 脉轮疗愈：</strong>运用脉轮系统协助你定位身心失衡的位置，并透过能量引导回到平衡。</li>
+                            <li><strong class="text-teal-300">🃏 卡牌觉察：</strong>搭配心境指引卡，引导你用自己的语言说出卡住的情绪，找到属于自己的疗愈节奏。</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-teal-400/50 pb-2">🛋️ 空间设计理念</h4>
+                        <p>心旅彩境不是一个“服务点”，而是一个你可以坐下来、喝茶、发呆、抽牌、写字、静心的地方。我们的设计灵感来自：“温柔收留情绪的空间”。</p>
+                        <p>我们特别保留“自然感”的木质感、香气感、光影变化，每一个摆设、每一个角落，都在说一句话：</p>
+                        <blockquote class="border-l-4 border-gray-500 pl-4 my-4 text-gray-400 italic">“你在这里，不需要表现得很好，只要真实就好。”</blockquote>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-teal-400/50 pb-2">💡 谁适合走进这里？</h4>
+                        <ul class="list-disc list-inside space-y-2 mt-3">
+                            <li>正在经历高压、焦虑或失落的人</li>
+                            <li>想更了解自己，探索内在方向的人</li>
+                            <li>企业主、助人工作者、创作者等长期“给予”却忽略自己的人</li>
+                            <li>想为人生做一次“心灵盘点”的你</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-teal-400/50 pb-2">🌱 我们相信</h4>
+                        <blockquote class="border-l-4 border-gray-500 pl-4 my-4 text-gray-400 italic">真正的疗愈，不是摆脱问题，而是和自己重新成为朋友。而这段旅程，不需要你一个人走。</blockquote>
+                        <p>欢迎你回家，欢迎你来到——</p>
+                        <p class="font-bold mt-2">Soul Palette Wellness Healing Centre 心旅彩境</p>
+                        <p class="text-sm text-gray-400">No.38A - 1, Jalan Temenggung 17/9, Seksyen 9, Bandar Mahkota Cheras, 43200 Cheras</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-8">
+                    <button onclick="showScreen('founder-story-screen-main')" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors">返回</button>
+                    <button onclick="contactViaWhatsAppGeneral()" class="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.75 13.96c.25.13.42.2.55.33.13.13.21.29.29.5.08.21.12.45.12.72 0 .27-.04.51-.12.72-.08.21-.21.37-.33.5-.13.13-.27.23-.45.33-.18.1-.39.15-.63.15-.24.01-.5-.04-.78-.13-.28-.09-.58-.22-.91-.38-.33-.17-.68-.36-1.04-.59-.37-.23-.72-.48-1.06-.77-.34-.29-.65-.59-.91-.91-.26-.32-.48-.65-.65-.99-.17-.34-.29-.68-.37-1.02-.08-.34-.11-.67-.11-1s.04-.63.11-1c.07-.36.19-.7.37-1.02.17-.32.38-.62.65-.91.26-.29.55-.56.91-.82.35-.26.72-.48 1.09-.67.37-.19.74-.33 1.1-.41.37-.08.7-.12 1-.12s.58.04.81.12c.24.08.45.2.63.36.18.17.32.36.41.59.09.23.14.49.14.78 0 .27-.04.52-.12.74-.08.22-.21.4-.37.53-.17.13-.34.2-.55.2-.21 0-.4-.05-.58-.14-.18-.09-.35-.14-.49-.14-.15 0-.29.03-.41.08-.12.05-.24.13-.33.23-.1.1-.18.22-.23.36-.05.14-.08.29-.08.45s.03.29.08.42c.05.13.13.25.23.34.1.1.22.17.34.23.13.06.26.09.41.09.15.01.3-.04.45-.13.15-.09.28-.13.39-.13.21 0 .39.05.54.14zM12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10c-1.85 0-3.59-.5-5.1-1.38l-1.42.71.71-1.42C5.5 18.59 5 16.85 5 15c0-5.52 4.48-10 7-10zm0 1.5c-4.69 0-8.5 3.81-8.5 8.5 0 1.73.52 3.35 1.44 4.74l.13.2.01.02.02.02-1.02 2.04 2.04-1.02.02.02.02.01.2.13c1.39.92 3.01 1.44 4.74 1.44 4.69 0 8.5-3.81 8.5-8.5S16.69 3.5 12 3.5z"></path></svg>
+                        聯絡我們
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 企心动念页面 -->
+        <div id="qixindongnian-screen" class="screen max-w-3xl">
+             <div class="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-gray-700">
+                <h2 class="text-3xl font-bold mb-2 text-center text-indigo-400">💼 企心动念 · 企业疗愈成长计划</h2>
+                <h3 class="text-lg text-center text-gray-400 mb-6">——从心出发，重新点燃企业家的意志与方向</h3>
+                <div class="text-gray-300 space-y-6 leading-relaxed text-left max-h-[60vh] overflow-y-auto pr-4">
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-indigo-400/50 pb-2">🌱 什么是《企心动念》？</h4>
+                        <p>《企心动念》是由心旅彩境疗愈馆独创的一套企业成长陪跑计划，融合：</p>
+                        <p class="font-bold text-indigo-300 mt-2">情绪疗愈 × 品牌定位 × 内在驱动 × 行动整合</p>
+                        <p class="font-bold text-indigo-300">色彩 × 精油 × 卡牌 × 心理结构 × 策略节奏</p>
+                        <p class="mt-2">它不只是“企业辅导”，也不只是“情绪陪谈”，<br>它是一个陪你走进自己、走稳企业、走出卡点的系统。</p>
+                    </div>
+                     <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-indigo-400/50 pb-2">👥 谁适合参与？</h4>
+                        <ul class="list-disc list-inside space-y-2 mt-3">
+                            <li>处于事业瓶颈期，感觉“做很多，却没有突破”的企业主</li>
+                            <li>想要整合品牌、行动、情绪与愿景的中小型创业者</li>
+                            <li>明明专业没问题，却常被拖延、内耗、关系卡住的管理者</li>
+                            <li>想做出转型或启动第二事业的团队领导者</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-indigo-400/50 pb-2">🌀 如何进行？</h4>
+                        <p>《企心动念》采用<strong class="text-indigo-300">“双导师陪跑制”</strong>：</p>
+                        <ul class="list-none space-y-2 mt-3 pl-4">
+                           <li>🔹 <strong class="text-white">Jeffrey 老师</strong> —— 情绪疗愈师 × 空间建筑 × 品牌觉察</li>
+                           <li>🔹 <strong class="text-white">伟伦导师</strong> —— 企业策略规划 × 商业模式 × 行动推进</li>
+                        </ul>
+                        <p class="mt-3">我们透过 <strong class="text-indigo-300">8大单元疗愈型课程 + 每月陪跑会议</strong>，带你逐步走过：</p>
+                        <ul class="list-disc list-inside space-y-2 mt-3">
+                            <li>初心梳理 × 原点觉察</li>
+                            <li>品牌定位 × 客群回归</li>
+                            <li>价值拆解 × 核心连结</li>
+                            <li>情绪脉络 × 阻碍厘清</li>
+                            <li>节奏设定 × 时间管理</li>
+                            <li>空间/感官体验 × 品牌仪式感</li>
+                            <li>社群经营 × 内容策略</li>
+                            <li>愿景整合 × 行动蓝图</li>
+                        </ul>
+                        <p class="font-bold text-center text-yellow-400 my-2">把“知道该怎么做” → 转化为“真的动起来”。</p>
+                    </div>
+                     <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-indigo-400/50 pb-2">✨ 项目特色</h4>
+                         <ul class="list-none space-y-3 mt-3">
+                            <li>📍 线下进行，每月两次固定时段陪跑会议（不可随意更动）</li>
+                            <li>📊 每位企业主拥有一份“成长追踪纪录表”与阶段性评估</li>
+                            <li>🃏 搭配《心境指引卡》、《心灵地图》、《未来之镜》等专属工具</li>
+                            <li>🎁 结业可获得一份个人企业成长整合报告书（可用于融资、规划）</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white mb-3 border-b-2 border-indigo-400/50 pb-2">🔓 我们相信</h4>
+                        <blockquote class="border-l-4 border-gray-500 pl-4 my-4 text-gray-400 italic">企业的状态，就是企业主的心境映照。<br>疗愈企业，不是只看数据，而是看见你“当下真正的样子”。</blockquote>
+                        <p>走入《企心动念》，不是让你变得更像别人，而是帮你找回：你当初为什么出发，又该往哪里走？</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-8">
+                    <button onclick="showScreen('founder-story-screen-main')" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors">返回</button>
+                    <button onclick="contactViaWhatsAppGeneral()" class="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.75 13.96c.25.13.42.2.55.33.13.13.21.29.29.5.08.21.12.45.12.72 0 .27-.04.51-.12.72-.08.21-.21.37-.33.5-.13.13-.27.23-.45.33-.18.1-.39.15-.63.15-.24.01-.5-.04-.78-.13-.28-.09-.58-.22-.91-.38-.33-.17-.68-.36-1.04-.59-.37-.23-.72-.48-1.06-.77-.34-.29-.65-.59-.91-.91-.26-.32-.48-.65-.65-.99-.17-.34-.29-.68-.37-1.02-.08-.34-.11-.67-.11-1s.04-.63.11-1c.07-.36.19-.7.37-1.02.17-.32.38-.62.65-.91.26-.29.55-.56.91-.82.35-.26.72-.48 1.09-.67.37-.19.74-.33 1.1-.41.37-.08.7-.12 1-.12s.58.04.81.12c.24.08.45.2.63.36.18.17.32.36.41.59.09.23.14.49.14.78 0 .27-.04.52-.12.74-.08.22-.21.4-.37.53-.17.13-.34.2-.55.2-.21 0-.4-.05-.58-.14-.18-.09-.35-.14-.49-.14-.15 0-.29.03-.41.08-.12.05-.24.13-.33.23-.1.1-.18.22-.23.36-.05.14-.08.29-.08.45s.03.29.08.42c.05.13.13.25.23.34.1.1.22.17.34.23.13.06.26.09.41.09.15.01.3-.04.45-.13.15-.09.28-.13.39-.13.21 0 .39.05.54.14zM12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10c-1.85 0-3.59-.5-5.1-1.38l-1.42.71.71-1.42C5.5 18.59 5 16.85 5 15c0-5.52 4.48-10 7-10zm0 1.5c-4.69 0-8.5 3.81-8.5 8.5 0 1.73.52 3.35 1.44 4.74l.13.2.01.02.02.02-1.02 2.04 2.04-1.02.02.02.02.01.2.13c1.39.92 3.01 1.44 4.74 1.44 4.69 0 8.5-3.81 8.5-8.5S16.69 3.5 12 3.5z"></path></svg>
+                        聯絡我們
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
+        // --- App State ---
+        let currentState = { userName: '', userIntention: '', spreadType: 0, drawnCards: [], availableCardIndexes: [] };
+        
         // --- Card Data ---
-        // IMPORTANT: The imageUrl path now points to a local 'images' folder.
-        // Ensure your image files (1.webp, 2.webp, etc.) are in that folder.
         const cardData = [
-            {id:1,name:"自爱之光",title:"不要在乎别人怎么看你，自己对自己好才重要。",content:"你是一个独一无二、完整的个体。你的价值不需要他人的认可。爱自己是一生最长情的告白，你值得拥有最好的。",color:"粉红",chakra:"心轮",oil:"玫瑰",angelNumber:"7", imageUrl: "images/1.webp"},
-            {id:2,name:"平和之源",title:"情绪来了就是来了，别让它搞乱你。",content:"情绪是人生的调色板，有高潮也有低谷。感受它们，但不要让它们主宰你。它们只是短暂的访客，不是你的定义。",color:"蓝色",chakra:"喉轮",oil:"绿薄荷",angelNumber:"33", imageUrl: "images/2.webp"},
-            {id:3,name:"真诚之桥",title:"真心对人好，别人也会对你好。",content:"人际关系是相互的，不仅是你需要他人，他们也需要你。真诚和尊重是最好的礼物。在这个互动中，你也会收获更多。",color:"绿色",chakra:"心轮",oil:"茶树",angelNumber:"111", imageUrl: "images/3.webp"},
-            {id:4,name:"时光之锚",title:"时间宝贵，用好了就是把生活过好了。",content:"时间是你最宝贵的资源。高效地管理时间，就是高效地管理你的整个生活。问自己：现在的行为是否与你的长期目标相符？",color:"黄色",chakra:"胃轮",oil:"柠檬",angelNumber:"21", imageUrl: "images/4.webp"},
-            {id:5,name:"成长之翼",title:"从失败中吸取教训。",content:"在职业道路上，持续学习和适应是关键。不要害怕失败，每一次失败都是一个新的开始。问自己：这次失败教会了我什么？",color:"橙色",chakra:"脐轮",oil:"依兰",angelNumber:"9", imageUrl: "images/5.webp"},
-            {id:6,name:"内在和谐",title:"接纳自己的不完美。",content:"内在的和谐来自于接受自己所有的面向，包括优点和缺点。当你接纳自己，你就能更自由地生活。",color:"紫色",chakra:"顶轮",oil:"薰衣草",angelNumber:"44", imageUrl: "images/6.webp"},
-            {id:7,name:"情绪解锁",title:"请你好好的面对你的情绪。",content:"情绪不是敌人，而是导师。它们来告诉你哪里需要关注，哪里需要治疗。不要压抑，要理解和释放。",color:"红色",chakra:"海底轮",oil:"玫瑰",angelNumber:"22", imageUrl: "images/7.webp"},
-            {id:8,name:"共鸣之心",title:"找到让你变好的人，和他们做朋友。",content:"真正的连接来自于共鸣，而不仅仅是相似。找到那些能让你成为更好自己的人，并与他们建立深刻的联系。",color:"绿色",chakra:"心轮",oil:"薑",angelNumber:"333", imageUrl: "images/8.webp"},
-            {id:9,name:"当下之力",title:"现在就是最重要的时刻。",content:"最有力量的时刻是现在。不要让过去的遗憾或未来的担忧拖你后腿。把握现在，行动起来。",color:"黄色",chakra:"胃轮",oil:"雪松",angelNumber:"1", imageUrl: "images/9.webp"},
-            {id:10,name:"无限可能",title:"把挑战当作机会。",content:"你的潜能是无限的。不要因为一时的困难或失败而限制自己。每一个挑战都是成长的机会。",color:"橙色",chakra:"脐轮",oil:"佛手柑",angelNumber:"11", imageUrl: "images/10.webp"},
-            {id:11,name:"灵魂之旅",title:"灵性就是懂得自己，在这世界上为什么存在。",content:"灵性不仅仅是关于信仰或修行，它是关于理解自己在这个宇宙中的位置和目的。",color:"紫色",chakra:"顶轮",oil:"洋甘菊",angelNumber:"777", imageUrl: "images/11.webp"},
-            {id:12,name:"内在智慧",title:"安静下来，会发现你比想象中更懂事。",content:"你内在的智慧比你想象的要多。当你安静下来，你会听到你的灵魂在对你说什么。",color:"紫色",chakra:"顶轮",oil:"橙花",angelNumber:"55", imageUrl: "images/12.webp"},
-            {id:13,name:"宇宙连接",title:"觉得孤独就想想，其实你不是一个人。",content:"你不是孤立的存在，你是宇宙的一部分。当你感到孤独或迷茫时，记得与更大的存在连接。",color:"紫色",chakra:"顶轮",oil:"永久花",angelNumber:"88", imageUrl: "images/13.webp"},
-            {id:14,name:"真我表达",title:"勇敢地表达自己。",content:"真正的自由来自于能够毫无保留地表达自己。不要害怕别人的评判，只有你自己能定义自己。",color:"紫色",chakra:"顶轮",oil:"冷杉",angelNumber:"99", imageUrl: "images/14.webp"},
-            {id:15,name:"生命之歌",title:"找到自己喜欢的事做，生活就会好起来。",content:"每个人都有他们自己的生命之歌。当你找到它并唱出来，你会发现生活变得更加和谐和美好。",color:"紫色",chakra:"顶轮",oil:"罗勒",angelNumber:"2", imageUrl: "images/15.webp"},
-            {id:16,name:"自由之翼",title:"懂得爱自己，才能获得真正自由。",content:"真正的自由不仅仅是摆脱物质世界的束缚，更重要的是内心的解放。当你学会接纳和爱自己，释放对自己的批评和限制，你将像一只展翅的鸟，飞得更高、更远。",color:"粉红",chakra:"心轮",oil:"西洋蓍草",angelNumber:"21", imageUrl: "images/16.webp"},
-            {id:17,name:"心灵平衡",title:"无论外界如何，都要保持内心的平衡。",content:"平衡不仅是一种内在的状态，也是一种生活的艺术。当外界纷扰和情绪波动席卷而来，记得回到你的内心平衡点。在那里，你会找到真正的安宁和力量。",color:"蓝色",chakra:"喉轮",oil:"白千层",angelNumber:"37", imageUrl: "images/17.webp"},
-            {id:18,name:"爱的回响",title:"给予爱来增加人缘。",content:"爱是宇宙最强大的能量之一，它有回响的力量。当你无条件地给予爱和关心，不仅人际关系会变得更加和谐，这份爱也会如回声般回到你身上。",color:"绿色",chakra:"心轮",oil:"橙花",angelNumber:"29", imageUrl: "images/18.webp"},
-            {id:19,name:"时间的艺术",title:"懂得时间管理，生活就能过得更顺畅。",content:"时间管理不仅是任务和计划的执行，更是一种生活的艺术。掌握它，你就能和谐地引导生活的节奏。",color:"黄色",chakra:"胃轮",oil:"黑胡椒",angelNumber:"44", imageUrl: "images/19.webp"},
-            {id:20,name:"无限探索",title:"将你的勇气拿出来。",content:"成长是一个永无止境的旅程。每一次的探索都是一次自我更新，不要害怕未知，它是你成长的最佳土壤。",color:"橙色",chakra:"脐轮",oil:"永久花",angelNumber:"33", imageUrl: "images/20.webp"},
-            {id:21,name:"自我赞美",title:"去赞美最有价值的自己。",content:"你值得赞美和尊重，尤其是来自自己。每天对自己说：“我是有价值的，我值得最好的。”",color:"粉红",chakra:"心轮",oil:"尤加利",angelNumber:"44", imageUrl: "images/21.webp"},
-            {id:22,name:"情绪释放",title:"去释放压抑的情绪。",content:"压抑的情绪是内心的负担。找到安全的方式，释放这些情绪，让自己重新获得自由和平衡。",color:"蓝色",chakra:"喉轮",oil:"百里香",angelNumber:"55", imageUrl: "images/22.webp"},
-            {id:23,name:"真诚沟通",title:"保持你那优秀的真诚。",content:"真诚是人际关系的基石。展示真实的自己，并愿意听取他人，建立真挚的连接。",color:"绿色",chakra:"心轮",oil:"肉桂",angelNumber:"66", imageUrl: "images/23.webp"},
-            {id:24,name:"时间的礼物",title:"时间是礼物。",content:"时间是你最宝贵的资源。用它去做有意义的事，给自己、给他人、给这个世界。",color:"黄色",chakra:"胃轮",oil:"杜松浆果",angelNumber:"77", imageUrl: "images/24.webp"},
-            {id:25,name:"勇往直前",title:"把失败作为成长的机会。",content:"失败不是终点，而是成功的起点。每一次的挫折都是通往成功的跳板。",color:"橙色",chakra:"脐轮",oil:"冷杉",angelNumber:"88", imageUrl: "images/25.webp"},
-            {id:26,name:"内在宝藏",title:"深挖自己找到真正的宝藏，让你更特别。",content:"探索自己内心的深处，你会发现无尽の宝藏。这些宝藏不仅是物质的，更是精神的，它们构成了你独一无二的自我。",color:"粉红",chakra:"心轮",oil:"莱姆",angelNumber:"131", imageUrl: "images/26.webp"},
-            {id:27,name:"情绪导航",title:"倾听情绪的指引。",content:"情绪是你内心的导航系统，它们像指南针一样，告诉你何时需要调整人生的方向或做出重要的决策。",color:"蓝色",chakra:"喉轮",oil:"茴香",angelNumber:"144", imageUrl: "images/27.webp"},
-            {id:28,name:"共情",title:"真正的朋友是心里懂心里。",content:"真正的连接来自于共鸣，这种共鸣不仅仅是思想和感情的交流，更是灵魂深处的相通。",color:"绿色",chakra:"心轮",oil:"松红梅",angelNumber:"153", imageUrl: "images/28.webp"},
-            {id:29,name:"当下的力量",title:"活在当下。",content:"真正的力量存在于当下这一刻。不要让过去的阴影或未来的不确定性剥夺你现在的力量。",color:"黄色",chakra:"胃轮",oil:"芫荽",angelNumber:"162", imageUrl: "images/29.webp"},
-            {id:30,name:"自我启发",title:"找到改变未来的线索，从了解自己开始。",content:"当你开始深入了解自己，你会发现隐藏在内心深处的启示。这些启示将引导你走向更好的未来。",color:"紫色",chakra:"顶轮",oil:"快乐鼠尾草",angelNumber:"144", imageUrl: "images/30.webp"},
-            {id:31,name:"自我觉醒",title:"更了解自己以让自我觉醒。",content:"当你开始深入了解自己，你会发现自我觉醒是一场无尽的旅程。每一步都是向内心深处的探索。",color:"靛色",chakra:"眉心轮",oil:"罗勒",angelNumber:"21", imageUrl: "images/31.webp"},
-            {id:32,name:"内在和平",title:"懂得接受生活，就有内心平静。",content:"内在的和平不仅是一种状态，更是一种选择。它来自于对自己和外界的深刻理解，以及对生活中不可控因素的接受。",color:"蓝色",chakra:"喉轮",oil:"佛手柑",angelNumber:"22", imageUrl: "images/32.webp"},
-            {id:33,name:"勇气与决断",title:"勇敢地做出决定。",content:"勇气不仅是面对困难，更是在关键时刻做出决断。勇气是你内在力量的体现。",color:"红色",chakra:"海底轮",oil:"岩兰草",angelNumber:"44", imageUrl: "images/33.webp"},
-            {id:34,name:"心灵平衡",title:"透过冥想来反思。",content:"在忙碌的生活中，找到心灵的平衡是至关重要的。通过冥想和自我反思，让内心达到和谐。",color:"绿色",chakra:"心轮",oil:"天竺葵",angelNumber:"21", imageUrl: "images/34.webp"},
-            {id:35,name:"月光之舞",title:"跟着内心的感觉走。",content:"在月光下，你的灵魂开始跳舞。这是内心深处的自由与和谐，是你与宇宙的对话。",color:"靛色",chakra:"眉心轮",oil:"甜马鬱蘭",angelNumber:"37", imageUrl: "images/35.webp"},
-            {id:36,name:"自我尊重",title:"无论如何，都不能少了尊重自己。",content:"尊重自己是自爱的基础。无论在什么情况下，都不要贬低或伤害自己。",color:"粉红",chakra:"心轮",oil:"伊兰",angelNumber:"23", imageUrl: "images/36.webp"},
-            {id:37,name:"情绪平衡",title:"自己主导自己的情绪。",content:"学会平衡自己的情绪是至关重要的。不要让任何一种情绪过度主导你的生活，以免影响你的决策和人际关系。",color:"蓝色",chakra:"喉轮",oil:"松树",angelNumber:"24", imageUrl: "images/37.webp"},
-            {id:38,name:"真实自我",title:"做真实的自我。",content:"在人际关系中，做自己是至关重要的。只有真实的自我才能吸引到与你心灵相通的人。",color:"绿色",chakra:"心轮",oil:"佛手柑",angelNumber:"25", imageUrl: "images/38.webp"},
-            {id:39,name:"时间的价值",title:"珍惜时间。",content:"时间是无法找回的宝贵资源。珍惜每一刻，并用它来实现你真正重要的目标。",color:"黄色",chakra:"胃轮",oil:"葡萄柚",angelNumber:"26", imageUrl: "images/39.webp"},
-            {id:40,name:"持续学习",title:"永远不停止学习。",content:"成长是一个永无止境的过程。持续学习不仅能丰富你的生活，还是职业成功的关键。",color:"橙色",chakra:"脐轮",oil:"香蜂草",angelNumber:"27", imageUrl: "images/40.webp"},
-            {id:41,name:"心灵之窗",title:"好好想象自己到底要干嘛。",content:"通过深入的内省和反思，你将打开心灵之窗，更加清晰地了解自己的真实需求、愿望和潜在能力。这是自我成长和心灵觉醒的重要一步。",color:"紫色",chakra:"顶轮",oil:"雪松",angelNumber:"33", imageUrl: "images/41.webp"},
-            {id:42,name:"生命之舞",title:"不要害怕生活总在变化，把每次变化当成新机会。",content:"生命是一个不断变化的舞蹈，每一个转折都带来新的机会和挑战。接受这些变化，并用全身心的热情去拥抱它们。",color:"靛色",chakra:"眉心轮",oil:"苦橙叶",angelNumber:"528", imageUrl: "images/42.webp"},
-            {id:43,name:"心灵之音",title:"安静的倾听内心的声音，它会告诉你该怎么做。",content:"当你静下心来，你会听到内心深处的声音，这是你灵性和智慧的回声，它会引导你走向正确的道路。",color:"蓝色",chakra:"喉轮",oil:"迷迭香",angelNumber:"43", imageUrl: "images/43.webp"},
-            {id:44,name:"自由之声",title:"勇敢地表达自己，感受自由的香气。",content:"当你找到自己的声音并勇敢地表达出来，你会感到一种前所未有的自由和力量。这张牌卡鼓励你不畏困难，大胆地说出你的真实想法。",color:"蓝色",chakra:"喉轮",oil:"柠檬草",angelNumber:"242", imageUrl: "images/44.webp"},
-            {id:45,name:"自我推销",title:"打开自己的创意。",content:"通过创新和创造，展示自己的独特才华和个性，不仅能吸引更多的关注，还能让你在职场和生活中更加出色。",color:"紫色",chakra:"顶轮",oil:"鼠尾草",angelNumber:"55", imageUrl: "images/45.webp"},
-            {id:46,name:"自我肯定",title:"给自己勇气与决断。",content:"通过勇气和决断力，面对生活的各种挑战，无论是工作压力还是人际关系，都能从容应对。",color:"黑色",chakra:"海底轮",oil:"洋甘菊",angelNumber:"56", imageUrl: "images/46.webp"},
-            {id:47,name:"情绪日记",title:"了解自己情绪所想要的。",content:"通过记录自己的情绪和触发因素，你不仅能更好地了解自己，还能找到更有效的应对策略。",color:"黄色",chakra:"胃轮",oil:"绿花白千层",angelNumber:"52", imageUrl: "images/47.webp"},
-            {id:48,name:"共情",title:"更加深入的沟通。",content:"通过与他人的深度沟通和理解，你不仅能建立更强的人际关系，还能增强自己的社交技巧。",color:"蓝色",chakra:"喉轮",oil:"没药",angelNumber:"54", imageUrl: "images/48.webp"},
-            {id:49,name:"时间优先级",title:"坚持自己明智的选择。",content:"通过内在的洞察力和反思，明确哪些任务和目标最值得你的时间和精力，从而实现更高的工作效率和生活质量。",color:"靛色",chakra:"眉心轮",oil:"没药",angelNumber:"51", imageUrl: "images/49.webp"},
-            {id:50,name:"终身学习",title:"不要拒绝成长。",content:"无论你处于生命的哪个阶段，持续的学习和成长都是通往更深层次自我认识和满足的关键。",color:"红色",chakra:"海底轮",oil:"乳香",angelNumber:"111", imageUrl: "images/50.webp"}
+            { id: 1, name: "自爱之光", title: "不要在乎别人怎么看你,自己对自己好才重要。", content: "你是一个独一无二、完整的个体。你的价值不需要他人的认可。爱自己是一生最长情的告白,你值得拥有最好的。", color: "粉红", chakra: "心轮", oil: "玫瑰", number: 7, chakraColorHex: "linear-gradient(to right, #f472b6, #fb923c)" },
+            { id: 2, name: "平和之源", title: "情绪来了就是来了,别让它搞乱你。", content: "情绪是人生的调色板,有高潮也有低谷。感受它们,但不要让它们主宰你。它们只是短暂的访客,不是你的定义。", color: "蓝色", chakra: "喉轮", oil: "绿薄荷", number: 33, chakraColorHex: "linear-gradient(to right, #38bdf8, #6366f1)" },
+            { id: 3, name: "真诚之桥", title: "真心对人好,别人也会对你好。", content: "人际关系是相互的,不仅是你需要他人,他们也需要你。真诚和尊重是最好的礼物。在这个互动中,你也会收获更多。", color: "绿色", chakra: "心轮", oil: "茶树", number: 111, chakraColorHex: "linear-gradient(to right, #34d399, #22c55e)" },
+            { id: 4, name: "时光之锚", title: "时间宝贵,用好了就是把生活过好了。", content: "时间是你最宝贵的资源。高效地管理时间,就是高效地管理你的整个生活。问自己:现在的行为是否与你的长期目标相符?", color: "黄色", chakra: "胃轮", oil: "柠檬", number: 21, chakraColorHex: "linear-gradient(to right, #facc15, #fbbf24)" },
+            { id: 5, name: "成长之翼", title: "从失败中吸取教训。", content: "在职业道路上,持续学习和适应是关键。不要害怕失败,每一次失败都是一个新的开始。问自己:这次失败教会了我什么?", color: "橙色", chakra: "脐轮", oil: "依兰", number: 9, chakraColorHex: "linear-gradient(to right, #fb923c, #f97316)" },
+            { id: 6, name: "内在和谐", title: "接纳自己的不完美。", content: "内在的和谐来自于接受自己所有的面向,包括优点和缺点。当你接纳自己,你就能更自由地生活。", color: "紫色", chakra: "顶轮", oil: "薰衣草", number: 44, chakraColorHex: "linear-gradient(to right, #a78bfa, #c084fc)" },
+            { id: 33, name: "勇气与决断", title: "勇敢地做出决定。", content: "勇气不仅是面对困难,更是在关键时刻做出决断。勇气是你内在力量的体现。", color: "红色", chakra: "海底轮", oil: "岩兰草", number: 44, chakraColorHex: "linear-gradient(to right, #f87171, #ef4444)" }
         ];
 
-        // --- DOM Elements ---
-        const introScreen = document.getElementById('intro-screen');
-        const userInfoScreen = document.getElementById('user-info-screen');
-        const userInfoForm = document.getElementById('user-info-form');
-        const drawScreen = document.getElementById('draw-screen');
-        const startButton = document.getElementById('start-draw-button');
-        const cardDisplayArea = document.getElementById('card-display-area');
-        const readingTypeSelector = document.getElementById('reading-type-selector');
-        const readingTypeCards = document.querySelectorAll('.reading-type-card');
-        const readingTitle = document.getElementById('reading-title');
-        const drawPrompt = document.getElementById('draw-prompt');
-        const drawAgainButton = document.getElementById('draw-again-button');
-        const archiveSection = document.getElementById('archive-section');
-        const archiveContent = document.getElementById('archive-content');
-        const copyButton = document.getElementById('copy-button');
+        // --- Quotes ---
+        const positiveQuotes = ["每一次呼吸，都是一次全新的開始。", "相信你的直覺，它是你內心最真實的聲音。", "靜下心，答案就在其中。", "你是獨一無二的，你的光芒正等待綻放。", "今天，選擇用愛與善意對待自己。"];
+        const encouragingQuotes = ["深入探索的旅程，始於面對內心的勇氣。", "每一張牌都是一面鏡子，映照出你內在的智慧。", "答案並非在外，而在於你如何詮釋內心的指引。"];
 
-        let currentDeck = [];
-        let drawStep = 0;
-        let sessionData = {};
+        // --- Core Functions ---
+        document.addEventListener('DOMContentLoaded', () => {
+            showScreen('welcome-screen');
+            resetApp();
+        });
 
-        // --- Functions ---
-        function getChakraGradClass(chakra, color) {
-            const map = {
-                '海底轮': 'chakra-grad-red', '脐轮': 'chakra-grad-orange', '胃轮': 'chakra-grad-yellow',
-                '心轮': 'chakra-grad-green', '喉轮': 'chakra-grad-blue', '眉心轮': 'chakra-grad-indigo',
-                '顶轮': 'chakra-grad-purple',
-            };
-            if (chakra === '心轮' && color === '粉红') return 'chakra-grad-pink';
-            if (chakra === '海底轮' && color === '黑色') return 'chakra-grad-black';
-            return map[chakra] || 'bg-gray-400';
-        }
-
-        function getChakraTagClass(chakra, color) {
-            const map = {
-                '海底轮': 'chakra-tag-red', '脐轮': 'chakra-tag-orange', '胃轮': 'chakra-tag-yellow',
-                '心轮': 'chakra-tag-green', '喉轮': 'chakra-tag-blue', '眉心轮': 'chakra-tag-indigo',
-                '顶轮': 'chakra-tag-purple',
-            };
-             if (chakra === '心轮' && color === '粉红') return 'chakra-tag-pink';
-            if (chakra === '海底轮' && color === '黑色') return 'chakra-tag-black';
-            return map[chakra] || 'bg-gray-200 text-gray-800';
-        }
-
-        function createCardView(card) {
-            const gradClass = getChakraGradClass(card.chakra, card.color);
-            const tagClass = getChakraTagClass(card.chakra, card.color);
-            const cardEl = document.createElement('div');
-            cardEl.className = `card-view`;
-            cardEl.innerHTML = `
-                <div class="card-header ${gradClass} flex justify-between items-center">
-                    <h3 class="text-2xl font-bold">${card.name}</h3>
-                    <span class="text-3xl font-bold opacity-50">${String(card.id).padStart(2, '0')}</span>
-                </div>
-                <div class="card-content flex-grow flex flex-col">
-                    <blockquote class="my-4 p-4 bg-gray-50 rounded-lg">
-                        <p class="text-lg text-purple-800 italic">“${card.title}”</p>
-                    </blockquote>
-                    <p class="text-gray-700 text-left leading-relaxed flex-grow">${card.content}</p>
-                    <div class="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <span>色彩: <strong>${card.color}</strong></span> | 
-                                <span>精油: <strong>${card.oil}</strong></span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                               <span class="font-semibold ${tagClass} px-2 py-1 rounded-full">${card.chakra}</span>
-                               <span>天使數字: <strong>${card.angelNumber}</strong></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            return cardEl;
-        }
-
-
-        function shuffleDeck() {
-            currentDeck = [...cardData];
-            for (let i = currentDeck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [currentDeck[i], currentDeck[j]] = [currentDeck[j], currentDeck[i]];
-            }
-        }
-        
-        function setupThreeCardDraw() {
-            sessionData.readingType = '三重心语';
-            sessionData.cards = [];
-            readingTypeSelector.classList.add('hidden');
-            readingTitle.textContent = '三重心语';
-            cardDisplayArea.innerHTML = '';
-            cardDisplayArea.classList.add('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-6', 'items-stretch');
-
-            const positions = [
-                { id: 'obstacle', title: '什么拖住了我？', subtitle: '(阻碍卡)' },
-                { id: 'present', title: '我正在经历什么？', subtitle: '(当下卡)' },
-                { id: 'guidance', title: '我该如何支持自己？', subtitle: '(引导卡)' }
-            ];
-
-            positions.forEach(pos => {
-                const placeholderWrapper = document.createElement('div');
-                placeholderWrapper.className = 'flex flex-col text-center';
-                placeholderWrapper.innerHTML = `<h3 class="text-xl font-semibold text-gray-700 mb-1">${pos.title}</h3><p class="text-sm text-gray-500 mb-2">${pos.subtitle}</p>`;
-                
-                const placeholder = document.createElement('div');
-                placeholder.className = 'card-placeholder clickable flex-grow';
-                placeholder.dataset.position = pos.id;
-                placeholder.innerHTML = `<button class="bg-white border border-gray-300 text-gray-600 font-semibold py-2 px-5 rounded-full hover:bg-gray-100 hover:border-gray-400 transition-colors">抽牌</button>`;
-                
-                placeholder.addEventListener('click', handleThreeCardDraw);
-                
-                placeholderWrapper.appendChild(placeholder);
-                cardDisplayArea.appendChild(placeholderWrapper);
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.style.display = 'none';
             });
-
-            drawStep = 1;
-            updateDrawPrompt();
-        }
-
-        function handleThreeCardDraw(event) {
-            const placeholder = event.currentTarget;
-            const position = placeholder.dataset.position;
-            
-            let shouldDraw = false;
-            if (drawStep === 1 && position === 'present') shouldDraw = true;
-            else if (drawStep === 2 && position === 'obstacle') shouldDraw = true;
-            else if (drawStep === 3 && position === 'guidance') shouldDraw = true;
-
-            if (shouldDraw) {
-                placeholder.removeEventListener('click', handleThreeCardDraw);
-                const card = currentDeck.pop();
-                sessionData.cards.push({ card: card, position: placeholder.previousElementSibling.textContent });
-                const cardView = createCardView(card);
-                placeholder.parentNode.replaceChild(cardView, placeholder);
-                drawStep++;
-                updateDrawPrompt();
+            const activeScreen = document.getElementById(screenId);
+            if (activeScreen) {
+                activeScreen.style.display = activeScreen.classList.contains('modal-overlay') ? 'flex' : 'block';
             }
         }
 
-        function updateDrawPrompt() {
-            switch (drawStep) {
-                case 1:
-                    drawPrompt.textContent = "请先点击中间的『当下卡』";
-                    break;
-                case 2:
-                    drawPrompt.textContent = "接着，请点击左边的『阻碍卡』";
-                    break;
-                case 3:
-                    drawPrompt.textContent = "最后，请点击右边的『引导卡』";
-                    break;
-                default:
-                    drawPrompt.textContent = "牌阵已完成，请感受牌卡带来的指引。";
-                    drawAgainButton.classList.remove('hidden');
-                    displayArchiveArea(sessionData);
+        function resetApp() {
+            currentState = { userName: '', userIntention: '', spreadType: 0, drawnCards: [], availableCardIndexes: Array.from(Array(cardData.length).keys()) };
+            document.getElementById('user-name').value = '';
+            document.getElementById('user-intention').value = '';
+            document.getElementById('copy-feedback').textContent = '';
+            showScreen('welcome-screen');
+        }
+
+        function handleIntention() {
+            const name = document.getElementById('user-name').value.trim();
+            const intention = document.getElementById('user-intention').value.trim();
+            if (!name || !intention) {
+                alert("請輸入您的名字和探索的意圖。");
+                return;
             }
+            currentState.userName = name;
+            currentState.userIntention = intention;
+            showScreen('spread-screen');
         }
 
-        function displaySingleCard() {
-            sessionData.readingType = '单张每日指引';
-            sessionData.cards = [];
-            readingTypeSelector.classList.add('hidden');
-            readingTitle.textContent = '您的单张每日指引';
-            drawPrompt.textContent = '';
-            cardDisplayArea.innerHTML = ''; 
-            cardDisplayArea.classList.remove('grid', 'md:grid-cols-3', 'gap-6');
-            cardDisplayArea.classList.add('flex', 'flex-col', 'justify-center', 'items-center', 'gap-4');
-
-            const placeholderWrapper = document.createElement('div');
-            placeholderWrapper.id = 'single-card-wrapper';
-            placeholderWrapper.className = 'w-full md:w-2/3 lg:w-1/2';
-            
-            const placeholder = document.createElement('div');
-            placeholder.id = 'single-card-placeholder';
-            placeholder.className = 'card-placeholder';
-            placeholder.innerHTML = `<button id="draw-single-card-button" class="bg-teal-500 text-white font-bold py-3 px-8 rounded-full hover:bg-teal-600 transition-colors shadow-lg text-lg">抽牌</button>`;
-            placeholderWrapper.appendChild(placeholder);
-            cardDisplayArea.appendChild(placeholderWrapper);
-
-            const drawButton = document.getElementById('draw-single-card-button');
-            drawButton.addEventListener('click', () => {
-                const card = currentDeck.pop();
-                sessionData.cards.push({card: card, position: '每日指引'});
-                const cardView = createCardView(card);
-                
-                const wrapper = document.getElementById('single-card-wrapper');
-                wrapper.innerHTML = ''; // Clear the wrapper
-                wrapper.appendChild(cardView);
-
-                drawPrompt.textContent = '這是您今日的指引。';
-                drawAgainButton.classList.remove('hidden');
-                displayArchiveArea(sessionData);
-            }, { once: true });
-        }
-        
-        function displayArchiveArea(data) {
-            const subject = `心境指引卡 抽牌紀錄 - ${data.name}`;
-            let cardDetails = data.cards.map((item, index) => {
-                const card = item.card;
-                const position = item.position;
-                return `
-牌卡 ${index + 1} (${position}): ${card.name} (ID: ${card.id})
-心向: ${card.title}
-內容: ${card.content}
---------------------`;
-            }).join('\n');
-
-            const body = `您好，\n\n這是一份來自「心境指引卡」的抽牌紀錄存檔。\n\n**個案資料:**\n姓名: ${data.name}\n年齡: ${data.age || '未提供'}\n意圖: ${data.intention}\n\n**牌陣類型:** ${data.readingType}\n\n**抽牌結果:**\n${cardDetails}\n\n此為系統自動準備的郵件。`;
-            
-            archiveContent.value = body;
-            archiveSection.classList.remove('hidden');
-        }
-
-        function copyToClipboard(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed"; 
-            textArea.style.left = "-9999px";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                copyButton.textContent = '已複製！';
-                setTimeout(() => {
-                    copyButton.textContent = '複製紀錄';
-                }, 2000);
-            } catch (err) {
-                console.error('無法複製文字: ', err);
-                copyButton.textContent = '複製失敗';
+        function selectSpread(type) {
+            currentState.spreadType = type;
+            const quoteEl = document.getElementById('positive-quote');
+            if (type === 1) {
+                quoteEl.textContent = positiveQuotes[Math.floor(Math.random() * positiveQuotes.length)];
+                quoteEl.style.display = 'block';
+            } else if (type === 3) {
+                quoteEl.textContent = encouragingQuotes[Math.floor(Math.random() * encouragingQuotes.length)];
+                quoteEl.style.display = 'block';
+            } else {
+                quoteEl.style.display = 'none';
             }
-            document.body.removeChild(textArea);
+            setupReadingScreen();
+            showScreen('reading-screen');
         }
 
-        function resetDrawScreen() {
-            // Hide all screens
-            introScreen.classList.add('hidden');
-            userInfoScreen.classList.add('hidden');
-            drawScreen.classList.add('hidden');
+        function setupReadingScreen() {
+            const placeholdersContainer = document.getElementById('card-placeholders');
+            placeholdersContainer.innerHTML = '';
+            const titles = ["阻碍卡", "当下卡", "引导卡"];
+            const hints = ["什么拖住了我", "我正在经历什么", "我该如何支持自己"];
 
-            // Show the first screen
-            introScreen.classList.remove('hidden');
+            for (let i = 0; i < currentState.spreadType; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex flex-col items-center gap-2';
+                let titleHTML = '', hintHTML = '';
 
-            // Reset the state of the draw screen for the next session
-            cardDisplayArea.innerHTML = '';
-            cardDisplayArea.classList.remove('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-6', 'items-stretch', 'flex', 'flex-col', 'justify-center', 'items-center', 'gap-4');
-            readingTitle.textContent = '';
-            drawPrompt.textContent = '';
-            readingTypeSelector.classList.remove('hidden');
-            drawAgainButton.classList.add('hidden');
-            archiveSection.classList.add('hidden');
-            archiveContent.value = '';
-            drawStep = 0;
-            sessionData = {};
-            userInfoForm.reset();
-        }
-
-        // --- Event Listeners ---
-        startButton.addEventListener('click', () => {
-            introScreen.classList.add('hidden');
-            userInfoScreen.classList.remove('hidden');
-        });
-
-        userInfoForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            sessionData.name = document.getElementById('name').value;
-            sessionData.age = document.getElementById('age').value;
-            sessionData.intention = document.getElementById('intention').value;
-            
-            userInfoScreen.classList.add('hidden');
-            drawScreen.classList.remove('hidden');
-        });
-
-        readingTypeCards.forEach(button => {
-            button.addEventListener('click', () => {
-                const type = parseInt(button.dataset.type);
-                shuffleDeck();
-                if (type === 1) {
-                    displaySingleCard();
-                } else if (type === 3) {
-                    setupThreeCardDraw();
+                if (currentState.spreadType === 3) {
+                    titleHTML = `<h4 class="text-lg font-semibold text-gray-300">${titles[i]}</h4>`;
+                    hintHTML = `<p class="text-sm text-gray-500">(${hints[i]})</p>`;
                 }
-            });
-        });
 
-        drawAgainButton.addEventListener('click', resetDrawScreen);
-        copyButton.addEventListener('click', () => copyToClipboard(archiveContent.value));
+                const placeholderHTML = `
+                    <div class="card-container w-64 h-96">
+                        <div class="card-inner">
+                            <div class="card-front card-front-design">
+                                <svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <radialGradient id="glow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                                            <stop offset="0%" style="stop-color:rgba(251, 191, 36, 0.4); stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:rgba(251, 191, 36, 0); stop-opacity:0" />
+                                        </radialGradient>
+                                    </defs>
+                                    <rect width="200" height="300" fill="url(#glow)" />
+                                    <g stroke="#a3a3a3" stroke-width="0.5" stroke-opacity="0.3">
+                                        <circle cx="100" cy="150" r="40" fill="none"/>
+                                        <circle cx="100" cy="150" r="60" fill="none"/>
+                                        <circle cx="100" cy="150" r="80" fill="none"/>
+                                        <path d="M100 70 L100 230 M60 150 L140 150" />
+                                        <path d="M78.78 98.78 L121.21 201.21 M78.78 201.21 L121.21 98.78" />
+                                    </g>
+                                    <text x="100" y="270" font-family="Inter, Noto Sans TC" font-size="10" fill="#a3a3a3" text-anchor="middle" opacity="0.7">Inner Compass</text>
+                                </svg>
+                                <button onclick="drawCard(this.closest('.card-container'), ${i})" class="draw-button bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                                    抽牌
+                                </button>
+                            </div>
+                            <div class="card-back"></div>
+                        </div>
+                    </div>`;
+                wrapper.innerHTML = titleHTML + placeholderHTML + hintHTML;
+                placeholdersContainer.appendChild(wrapper);
+            }
+        }
+
+        function drawCard(cardContainer, cardIndex) {
+            if (cardContainer.classList.contains('flipped')) return;
+            if (currentState.availableCardIndexes.length === 0) return;
+            const randomIndex = Math.floor(Math.random() * currentState.availableCardIndexes.length);
+            const cardDataIndex = currentState.availableCardIndexes.splice(randomIndex, 1)[0];
+            const card = cardData[cardDataIndex];
+            currentState.drawnCards[cardIndex] = card;
+            cardContainer.querySelector('.card-back').innerHTML = createCardHTML(card);
+            cardContainer.classList.add('flipped');
+
+            if (currentState.drawnCards.filter(c => c).length === currentState.spreadType) {
+                setTimeout(() => {
+                    setupResultScreen();
+                    showScreen('result-screen');
+                }, 1500);
+            }
+        }
+
+        function setupResultScreen() {
+            const resultCardsContainer = document.getElementById('result-cards');
+            resultCardsContainer.innerHTML = '';
+            let archiveText = `--- Inner Compass 心境指引卡 ---\n\n`;
+            archiveText += `探索者: ${currentState.userName}\n`;
+            archiveText += `探索意圖: ${currentState.userIntention}\n\n`;
+            archiveText += `==============================\n\n`;
+
+            const titles = ["阻碍卡", "当下卡", "引导卡"];
+            const hints = ["什么拖住了我", "我正在经历什么", "我该如何支持自己"];
+
+            currentState.drawnCards.forEach((card, index) => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col items-center gap-2';
+                let titleHTML = '', hintHTML = '', positionTitleForArchive = '';
+
+                if(currentState.spreadType === 3) {
+                    titleHTML = `<h4 class="text-xl font-bold text-white">${titles[index]}</h4>`;
+                    hintHTML = `<p class="text-sm text-gray-500 mb-2">(${hints[index]})</p>`;
+                    positionTitleForArchive = `【${titles[index]}】`;
+                } else if (currentState.spreadType === 1) {
+                    positionTitleForArchive = `【今日洞見】`;
+                }
+                
+                cardWrapper.innerHTML = titleHTML + hintHTML + `<div class="w-72">${createCardHTML(card)}</div>`;
+                resultCardsContainer.appendChild(cardWrapper);
+                
+                archiveText += `[牌卡 ${index + 1}] ${positionTitleForArchive}\n名稱: ${card.name} (#${card.id})\n心向: ${card.title}\n內容: ${card.content}\n細節: [色彩疗愈: ${card.color}] [脉轮疗法: ${card.chakra}] [芳香植物: ${card.oil}] [天使数字: ${card.number}]\n\n`;
+            });
+            
+            archiveText += `==============================\n`;
+            archiveText += `此指引由【Inner Compass 心境指引卡】App 提供\n`;
+            archiveText += `Soul Palatte 心旅彩境疗愈馆 制作`;
+
+            document.getElementById('result-archive').value = archiveText;
+        }
+
+        function createCardHTML(card) {
+            const colorMap = { "粉红": "#f472b6", "蓝色": "#38bdf8", "绿色": "#34d399", "黄色": "#facc15", "橙色": "#fb923c", "紫色": "#a78bfa", "红色": "#f87171" };
+            const textColor = colorMap[card.color] || '#ffffff';
+            return `
+                <div class="bg-gray-800 rounded-2xl p-6 shadow-2xl border border-gray-700 h-full flex flex-col">
+                    <div class="h-2 rounded-t-lg mb-4" style="background: ${card.chakraColorHex};"></div>
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold text-white">${card.id}. ${card.name}</h3>
+                        <p class="text-yellow-400 italic my-3">"${card.title}"</p>
+                        <p class="text-gray-300 text-sm leading-relaxed">${card.content}</p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-700 flex flex-col items-start gap-2 text-xs">
+                        <span class="font-medium px-2 py-1 rounded-full"><span class="text-gray-400">色彩疗愈：</span><span style="color: ${textColor}; font-weight: bold;">${card.color}</span></span>
+                        <span class="font-medium px-2 py-1 rounded-full"><span class="text-gray-400">脉轮疗法：</span>${card.chakra}</span>
+                        <span class="font-medium px-2 py-1 rounded-full"><span class="text-gray-400">芳香植物：</span>${card.oil}</span>
+                        <span class="font-medium px-2 py-1 rounded-full"><span class="text-gray-400">天使数字：</span>${card.number}</span>
+                    </div>
+                </div>`;
+        }
+        
+        function copyRecord() {
+            const archiveTextarea = document.getElementById('result-archive');
+            archiveTextarea.select();
+            archiveTextarea.setSelectionRange(0, 99999);
+            try {
+                const successful = document.execCommand('copy');
+                const msg = successful ? '紀錄已成功複製！' : '複製失敗。';
+                showCopyFeedback(msg, successful);
+            } catch (err) {
+                showCopyFeedback('複製失敗。', false);
+            }
+        }
+        
+        function showCopyFeedback(message, success) {
+            const feedbackEl = document.getElementById('copy-feedback');
+            feedbackEl.textContent = message;
+            feedbackEl.className = `text-center mt-4 h-4 ${success ? 'text-green-400' : 'text-red-400'}`;
+            setTimeout(() => { feedbackEl.textContent = ''; }, 3000);
+        }
+
+        // --- Booking Functions ---
+        function showBookingScreen(serviceName) {
+            document.getElementById('booking-service-name').textContent = serviceName;
+            document.getElementById('booking-name').value = currentState.userName;
+            document.getElementById('booking-intention').value = `諮詢意圖：\n${currentState.userIntention}`;
+            showScreen('booking-screen');
+        }
+
+        function sendBookingEmail() {
+            const service = document.getElementById('booking-service-name').textContent;
+            const name = document.getElementById('booking-name').value.trim();
+            const contact = document.getElementById('booking-contact').value.trim();
+            const time = document.getElementById('booking-time').value.trim();
+
+            if (!name || !contact || !time) {
+                alert('請填寫所有必填欄位：名字、聯絡方式、希望預約的時間。');
+                return;
+            }
+
+            const email = 'xinlvcaijing.sp@gmail.com';
+            const subject = `[Inner Compass App] 專業諮詢預約 - ${service}`;
+            const body = `你好，Soul Palatte 心旅彩境疗愈馆：\n\n我希望預約一項專業諮詢服務。\n\n服務項目：${service}\n姓名：${name}\n聯絡方式：${contact}\n希望預約時間：${time}\n\n---\n我的探索意圖：\n${currentState.userIntention}\n---\n\n期待您的回覆，謝謝！`;
+            const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoLink;
+        }
+
+        function sendWhatsAppMessage() {
+            const service = document.getElementById('booking-service-name').textContent;
+            const name = document.getElementById('booking-name').value.trim();
+            const contact = document.getElementById('booking-contact').value.trim();
+            const time = document.getElementById('booking-time').value.trim();
+            
+            if (!name || !contact || !time) {
+                alert('請填寫所有必填欄位：名字、聯絡方式、希望預約的時間。');
+                return;
+            }
+
+            const phoneNumber = '60198198694';
+            const message = `你好，Soul Palatte 心旅彩境疗愈馆：\n\n我希望透過 Inner Compass App 預約一項專業諮詢服務。\n\n*服務項目：* ${service}\n*姓名：* ${name}\n*聯絡方式：* ${contact}\n*希望預約時間：* ${time}\n\n*我的探索意圖：*\n${currentState.userIntention}\n\n期待您的回覆，謝謝！`;
+            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function contactViaWhatsAppGeneral() {
+            const phoneNumber = '60198198694';
+            const userName = currentState.userName || '(尚未填寫)';
+            const userIntention = currentState.userIntention || '(尚未填寫)';
+            
+            const message = `你好，Soul Palatte 心旅彩境疗愈馆：\n\n我透過 Inner Compass App 進行了抽牌，希望能進一步了解你們的專業諮詢服務。\n\n*我的名字是：* ${userName}\n*我的探索意圖是：*\n${userIntention}\n\n期待您的回覆，謝謝！`;
+            
+            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
 
     </script>
 </body>
