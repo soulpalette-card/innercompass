@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
             background-color: #0c1427;
         }
         ::-webkit-scrollbar { width: 8px; }
@@ -62,17 +62,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-end; /* Move button to bottom */
+            padding-bottom: 2rem;
             position: relative;
             overflow: hidden;
-        }
-        .card-front-design svg {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            z-index: 1;
         }
         .card-front-design .draw-button {
             position: relative;
@@ -455,13 +448,13 @@
         
         // --- Card Data ---
         const cardData = [
-            { id: 1, name: "自爱之光", title: "不要在乎别人怎么看你,自己对自己好才重要。", content: "你是一个独一无二、完整的个体。你的价值不需要他人的认可。爱自己是一生最长情的告白,你值得拥有最好的。", color: "粉红", chakra: "心轮", oil: "玫瑰", number: 7, chakraColorHex: "linear-gradient(to right, #f472b6, #fb923c)" },
-            { id: 2, name: "平和之源", title: "情绪来了就是来了,别让它搞乱你。", content: "情绪是人生的调色板,有高潮也有低谷。感受它们,但不要让它们主宰你。它们只是短暂的访客,不是你的定义。", color: "蓝色", chakra: "喉轮", oil: "绿薄荷", number: 33, chakraColorHex: "linear-gradient(to right, #38bdf8, #6366f1)" },
-            { id: 3, name: "真诚之桥", title: "真心对人好,别人也会对你好。", content: "人际关系是相互的,不仅是你需要他人,他们也需要你。真诚和尊重是最好的礼物。在这个互动中,你也会收获更多。", color: "绿色", chakra: "心轮", oil: "茶树", number: 111, chakraColorHex: "linear-gradient(to right, #34d399, #22c55e)" },
-            { id: 4, name: "时光之锚", title: "时间宝贵,用好了就是把生活过好了。", content: "时间是你最宝贵的资源。高效地管理时间,就是高效地管理你的整个生活。问自己:现在的行为是否与你的长期目标相符?", color: "黄色", chakra: "胃轮", oil: "柠檬", number: 21, chakraColorHex: "linear-gradient(to right, #facc15, #fbbf24)" },
-            { id: 5, name: "成长之翼", title: "从失败中吸取教训。", content: "在职业道路上,持续学习和适应是关键。不要害怕失败,每一次失败都是一个新的开始。问自己:这次失败教会了我什么?", color: "橙色", chakra: "脐轮", oil: "依兰", number: 9, chakraColorHex: "linear-gradient(to right, #fb923c, #f97316)" },
+            { id: 1, name: "自爱之光", title: "不要在乎别人怎么看你,自己对自己好才重要。", content: "你是一个独一无二、完整的个体。\n\n你的价值不需要他人的认可。\n\n爱自己是一生最长情的告白,你值得拥有最好的。", color: "粉红", chakra: "心轮", oil: "玫瑰", number: 7, chakraColorHex: "linear-gradient(to right, #f472b6, #fb923c)" },
+            { id: 2, name: "平和之源", title: "情绪来了就是来了,别让它搞乱你。", content: "情绪是人生的调色板,有高潮也有低谷。感受它们,但不要让它们主宰你。\n\n它们只是短暂的访客,不是你的定义。", color: "蓝色", chakra: "喉轮", oil: "绿薄荷", number: 33, chakraColorHex: "linear-gradient(to right, #38bdf8, #6366f1)" },
+            { id: 3, name: "真诚之桥", title: "真心对人好,别人也会对你好。", content: "人际关系是相互的,不只是你需要别人,他们也需要你。\n\n真诚和尊重,是你能给出的最好礼物；也是你最值得拥有的回馈。\n\n或许你正因为“太在意他人反应”而疲惫，也可能忘了自己也可以“先说出真实的感受”。", color: "绿色", chakra: "心轮", oil: "茶树", number: 111, chakraColorHex: "linear-gradient(to right, #34d399, #22c55e)" },
+            { id: 4, name: "时光之锚", title: "时间宝贵,用好了就是把生活过好了。", content: "时间是你最宝贵的资源。高效地管理时间,就是高效地管理你的整个生活。\n\n问自己:现在的行为是否与你的长期目标相符?", color: "黄色", chakra: "胃轮", oil: "柠檬", number: 21, chakraColorHex: "linear-gradient(to right, #facc15, #fbbf24)" },
+            { id: 5, name: "成长之翼", title: "从失败中吸取教训。", content: "在职业道路上,持续学习和适应是关键。不要害怕失败,每一次失败都是一个新的开始。\n\n问自己:这次失败教会了我什么?", color: "橙色", chakra: "脐轮", oil: "依兰", number: 9, chakraColorHex: "linear-gradient(to right, #fb923c, #f97316)" },
             { id: 6, name: "内在和谐", title: "接纳自己的不完美。", content: "内在的和谐来自于接受自己所有的面向,包括优点和缺点。当你接纳自己,你就能更自由地生活。", color: "紫色", chakra: "顶轮", oil: "薰衣草", number: 44, chakraColorHex: "linear-gradient(to right, #a78bfa, #c084fc)" },
-            { id: 33, name: "勇气与决断", title: "勇敢地做出决定。", content: "勇气不仅是面对困难,更是在关键时刻做出决断。勇气是你内在力量的体现。", color: "红色", chakra: "海底轮", oil: "岩兰草", number: 44, chakraColorHex: "linear-gradient(to right, #f87171, #ef4444)" }
+            { id: 33, name: "勇气与决断", title: "勇敢地做出决定。", content: "勇气不只是面对挑战，而是在关键时刻为自己做出选择。\n\n也许你一直等待一个“可以安心决定的时候”，\n\n但其实你已经拥有力量去行动——只要你愿意对自己诚实。", color: "红色", chakra: "海底轮", oil: "岩兰草", number: 44, chakraColorHex: "linear-gradient(to right, #f87171, #ef4444)" }
         ];
 
         // --- Quotes ---
@@ -528,43 +521,34 @@
 
             for (let i = 0; i < currentState.spreadType; i++) {
                 const wrapper = document.createElement('div');
-                wrapper.className = 'flex flex-col items-center gap-2';
-                let titleHTML = '', hintHTML = '';
+                let wrapperClasses = 'flex flex-col items-center';
+                let cardSize = 'w-64 h-96';
+                let titleBlockHTML = '';
 
                 if (currentState.spreadType === 3) {
-                    titleHTML = `<h4 class="text-lg font-semibold text-gray-300">${titles[i]}</h4>`;
-                    hintHTML = `<p class="text-sm text-gray-500">(${hints[i]})</p>`;
+                    titleBlockHTML = `<div class="text-center mb-2">
+                                        <h4 class="text-xl font-bold text-white">${titles[i]}</h4>
+                                        <p class="text-sm text-gray-500">(${hints[i]})</p>
+                                      </div>`;
+                    if (i === 1) { // Middle card
+                        wrapperClasses += ' transform sm:scale-110 mx-4';
+                    }
                 }
+                
+                wrapper.className = wrapperClasses;
 
                 const placeholderHTML = `
-                    <div class="card-container w-64 h-96">
+                    <div class="card-container ${cardSize}">
                         <div class="card-inner">
-                            <div class="card-front card-front-design">
-                                <svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
-                                    <defs>
-                                        <radialGradient id="glow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                                            <stop offset="0%" style="stop-color:rgba(251, 191, 36, 0.4); stop-opacity:1" />
-                                            <stop offset="100%" style="stop-color:rgba(251, 191, 36, 0); stop-opacity:0" />
-                                        </radialGradient>
-                                    </defs>
-                                    <rect width="200" height="300" fill="url(#glow)" />
-                                    <g stroke="#a3a3a3" stroke-width="0.5" stroke-opacity="0.3">
-                                        <circle cx="100" cy="150" r="40" fill="none"/>
-                                        <circle cx="100" cy="150" r="60" fill="none"/>
-                                        <circle cx="100" cy="150" r="80" fill="none"/>
-                                        <path d="M100 70 L100 230 M60 150 L140 150" />
-                                        <path d="M78.78 98.78 L121.21 201.21 M78.78 201.21 L121.21 98.78" />
-                                    </g>
-                                    <text x="100" y="270" font-family="Inter, Noto Sans TC" font-size="10" fill="#a3a3a3" text-anchor="middle" opacity="0.7">Inner Compass</text>
-                                </svg>
-                                <button onclick="drawCard(this.closest('.card-container'), ${i})" class="draw-button bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                            <div class="card-front bg-gray-800 border-2 border-dashed border-gray-600 rounded-2xl flex items-center justify-center card-placeholder">
+                                <button onclick="drawCard(this.closest('.card-container'), ${i})" class="w-24 h-24 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-full shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
                                     抽牌
                                 </button>
                             </div>
                             <div class="card-back"></div>
                         </div>
                     </div>`;
-                wrapper.innerHTML = titleHTML + placeholderHTML + hintHTML;
+                wrapper.innerHTML = titleBlockHTML + placeholderHTML;
                 placeholdersContainer.appendChild(wrapper);
             }
         }
@@ -590,38 +574,99 @@
         function setupResultScreen() {
             const resultCardsContainer = document.getElementById('result-cards');
             resultCardsContainer.innerHTML = '';
-            let archiveText = `--- Inner Compass 心境指引卡 ---\n\n`;
-            archiveText += `探索者: ${currentState.userName}\n`;
-            archiveText += `探索意圖: ${currentState.userIntention}\n\n`;
-            archiveText += `==============================\n\n`;
-
+            
             const titles = ["阻碍卡", "当下卡", "引导卡"];
             const hints = ["什么拖住了我", "我正在经历什么", "我该如何支持自己"];
 
-            currentState.drawnCards.forEach((card, index) => {
-                const cardWrapper = document.createElement('div');
-                cardWrapper.className = 'flex flex-col items-center gap-2';
-                let titleHTML = '', hintHTML = '', positionTitleForArchive = '';
+            let archiveText = '';
 
-                if(currentState.spreadType === 3) {
-                    titleHTML = `<h4 class="text-xl font-bold text-white">${titles[index]}</h4>`;
-                    hintHTML = `<p class="text-sm text-gray-500 mb-2">(${hints[index]})</p>`;
-                    positionTitleForArchive = `【${titles[index]}】`;
-                } else if (currentState.spreadType === 1) {
-                    positionTitleForArchive = `【今日洞見】`;
-                }
+            if (currentState.spreadType === 1) {
+                const card = currentState.drawnCards[0];
+                archiveText = `💌 心境指引卡 · 今日洞见\n`;
+                archiveText += `亲爱的 ${currentState.userName}，您好：\n\n`;
+                archiveText += `欢迎来到【心境指引卡线上抽牌系统】，很高兴今天与你相遇。\n`;
+                archiveText += `你刚刚发出的意图是：\n「${currentState.userIntention}」\n\n`;
+                archiveText += `这是一个充满勇气的提问，已经启动了一场来自内在的智慧回应。\n`;
+                archiveText += `🃏 抽卡方式：今日洞见 · 单张指引\n`;
+                archiveText += `这是一种最简单也最直接的方式，\n适合用来察觉你此刻的状态、能量焦点与内在讯息。\n`;
+                archiveText += `请花一点时间，慢慢读这张卡，它不是答案，而是一段来自你心底的邀请。\n\n`;
+                archiveText += `✨ 今日与你共振的卡牌是：\n`;
+                archiveText += `【牌卡 ${String(card.id).padStart(2, '0')} · ${card.name}】\n`;
+                archiveText += `心向短语： ${card.title}\n`;
+                archiveText += `内容指引：\n${card.content.replace(/\n\n/g, '\n')}\n\n`;
+                archiveText += `🎨 能量对应\n`;
+                archiveText += `色彩疗愈： ${card.color}\n`;
+                archiveText += `脉轮定位： ${card.chakra}\n`;
+                archiveText += `芳香植物： ${card.oil}\n`;
+                archiveText += `天使数字： ${card.number}\n\n`;
+                archiveText += `🌿 如何阅读这张卡？\n`;
+                archiveText += `这张卡不是用来“解决问题”，而是提醒你先回到自己的位置上，从那里，答案会慢慢浮现。\n\n`;
+                archiveText += `你可以试着思考以下问题（任选其一）：\n`;
+                archiveText += `🧭 这张卡的哪一句话，最打动你？\n`;
+                archiveText += `🪞 它像不像你最近的状态？是在哪里触动了你？\n`;
+                archiveText += `💡 如果你听从它的建议，今天你会怎么做出一点点不同？\n`;
+                archiveText += `✍️ 请写下一句话，送给今天的自己。\n\n`;
+                archiveText += `📓 你可以将你的回应写在纸上、手机里，或使用【抽卡日记】功能记录，作为日后的心灵地图。\n\n`;
+                archiveText += `🙏 最后，请记得：\n你不是孤单的，每一次向内探问，都是在重新建立你与世界之间更真实的连结。\n\n`;
+
+            } else if (currentState.spreadType === 3) {
+                archiveText = `💌 心境指引卡 · 情境深度探索\n`;
+                archiveText += `亲爱的 ${currentState.userName}，您好：\n\n`;
+                archiveText += `欢迎来到【心境指引卡线上抽牌系统】，很高兴今天与你相遇。\n`;
+                archiveText += `你刚刚发出的心意是：\n「${currentState.userIntention}」\n\n`;
+                archiveText += `谢谢你诚实地提出这个问题，这已经是疗愈旅程的第一步。\n\n`;
+                archiveText += `接下来，让我们透过三张牌卡，一起看见你的当下状态、困扰核心，以及你可以支持自己的方向。\n`;
+                archiveText += `🃏 本次牌阵：情境深度探索 · 三张牌\n`;
+                archiveText += `透过【阻碍卡】【当下卡】【引导卡】，这三张牌卡将勾勒出你此刻的内在情境地图。\n\n`;
                 
-                cardWrapper.innerHTML = titleHTML + hintHTML + `<div class="w-72">${createCardHTML(card)}</div>`;
-                resultCardsContainer.appendChild(cardWrapper);
-                
-                archiveText += `[牌卡 ${index + 1}] ${positionTitleForArchive}\n名稱: ${card.name} (#${card.id})\n心向: ${card.title}\n內容: ${card.content}\n細節: [色彩疗愈: ${card.color}] [脉轮疗法: ${card.chakra}] [芳香植物: ${card.oil}] [天使数字: ${card.number}]\n\n`;
-            });
+                currentState.drawnCards.forEach((card, index) => {
+                    archiveText += `✨【${titles[index]}】你${index === 0 ? '当前的卡点' : (index === 1 ? '此刻的真实状态' : '的行动方向')}是：\n`;
+                    archiveText += `🔹 牌卡 ${String(card.id).padStart(2, '0')} · ${card.name}\n`;
+                    archiveText += `心向短语： ${card.title}\n`;
+                    archiveText += `💬 内容指引：\n${card.content.replace(/\n\n/g, '\n')}\n\n`;
+                    archiveText += `🎨 能量对应：\n`;
+                    archiveText += `色彩疗愈：${card.color}\n`;
+                    archiveText += `脉轮定位：${card.chakra}\n`;
+                    archiveText += `芳香植物：${card.oil}\n`;
+                    archiveText += `天使数字：${card.number}\n\n`;
+                });
+
+                archiveText += `🌿 如何阅读这组三张牌？\n`;
+                archiveText += `这三张牌之间，形成一段层层推进的心灵对话。\n\n`;
+                archiveText += `也许你不是真的“没有选择”，而是一直在等待，那个允许自己选择的勇气。\n\n`;
+                archiveText += `🖊️ 接下来的觉察练习：\n`;
+                archiveText += `你可以静静地思考，并记录以下内容（任选其一）：\n`;
+                archiveText += `今天哪一张卡最触动你？为什么？\n`;
+                archiveText += `这三张卡之间，你看到什么共同的讯号？\n`;
+                archiveText += `写下一句话送给自己，作为这组抽卡的回响。\n\n`;
+                archiveText += `📌 你可以把这些感受写在纸上、手机备忘录，也可以在系统内使用【抽卡日记】功能，保存你的心灵轨迹。\n\n`;
+                archiveText += `🙏 最后，请记得：\n你不是孤单的。每一次愿意面对烦恼，其实都是重新走向真实的你。\n愿这组牌卡陪伴你，走出迷雾，靠近你想成为的样子。\n\n`;
+            }
             
-            archiveText += `==============================\n`;
-            archiveText += `此指引由【Inner Compass 心境指引卡】App 提供\n`;
-            archiveText += `Soul Palatte 心旅彩境疗愈馆 制作`;
+            archiveText += `—\n由【Inner Compass 心境指引卡】App 提供\n出品单位｜心旅彩境 Soul Palette Wellness Healing Centre`;
 
             document.getElementById('result-archive').value = archiveText;
+
+            currentState.drawnCards.forEach((card, index) => {
+                const cardWrapper = document.createElement('div');
+                let wrapperClasses = 'flex flex-col items-center';
+                let cardSize = 'w-72';
+                let titleBlockHTML = '';
+
+                if(currentState.spreadType === 3) {
+                    titleBlockHTML = `<div class="text-center mb-2">
+                                         <h4 class="text-2xl font-bold text-white">${titles[index]}</h4>
+                                         <p class="text-sm text-gray-500">(${hints[index]})</p>
+                                      </div>`;
+                     if (index === 1) { 
+                        wrapperClasses += ' transform sm:scale-110';
+                    }
+                }
+                
+                cardWrapper.className = wrapperClasses;
+                cardWrapper.innerHTML = titleBlockHTML + `<div class="${cardSize}">${createCardHTML(card)}</div>`;
+                resultCardsContainer.appendChild(cardWrapper);
+            });
         }
 
         function createCardHTML(card) {
@@ -633,7 +678,7 @@
                     <div class="flex-grow">
                         <h3 class="text-xl font-bold text-white">${card.id}. ${card.name}</h3>
                         <p class="text-yellow-400 italic my-3">"${card.title}"</p>
-                        <p class="text-gray-300 text-sm leading-relaxed">${card.content}</p>
+                        <p class="text-gray-300 text-sm leading-relaxed whitespace-pre-line">${card.content}</p>
                     </div>
                     <div class="mt-4 pt-4 border-t border-gray-700 flex flex-col items-start gap-2 text-xs">
                         <span class="font-medium px-2 py-1 rounded-full"><span class="text-gray-400">色彩疗愈：</span><span style="color: ${textColor}; font-weight: bold;">${card.color}</span></span>
