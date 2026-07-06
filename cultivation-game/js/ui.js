@@ -13,6 +13,10 @@ CULT.UI = {
     });
     CULT.UI.showScreen('main-screen');
 
+    CULT.UI.el('header-taiji').innerHTML = CULT.Icons.taiji();
+    CULT.UI.el('realm-icon').innerHTML = CULT.Icons.taiji();
+    CULT.UI.el('breakthrough-front-icon').innerHTML = CULT.Icons.taiji();
+
     CULT.UI.el('breakthrough-btn').addEventListener('click', CULT.UI.openBreakthroughModal);
     CULT.UI.el('breakthrough-confirm-btn').addEventListener('click', CULT.UI.confirmBreakthrough);
     CULT.UI.el('breakthrough-close-btn').addEventListener('click', CULT.UI.closeBreakthroughModal);
@@ -107,6 +111,17 @@ CULT.UI = {
         (state.combat.currentMonsterHp / state.combat.currentMonsterHpMax) * 100, 0, 100
       );
       CULT.UI.el('monster-hp-bar').style.width = `${monsterPct}%`;
+
+      if (CULT.UI.renderedMonsterId !== state.combat.currentMonsterId) {
+        const monsterDef = CULT.MONSTERS.find((m) => m.id === state.combat.currentMonsterId);
+        CULT.UI.el('monster-aura-slot').innerHTML = CULT.Icons.monsterAura(
+          state.combat.currentMonsterTier,
+          monsterDef ? monsterDef.emoji : '?'
+        );
+        CULT.UI.renderedMonsterId = state.combat.currentMonsterId;
+      }
+    } else {
+      CULT.UI.renderedMonsterId = null;
     }
 
     const logEl = CULT.UI.el('combat-log');
@@ -131,10 +146,15 @@ CULT.UI = {
         const itemId = state.equipped[slot];
         const item = itemId ? CULT.Data.getEquipment(itemId) : null;
         if (!item) {
-          return `<div class="stat-row"><span>${label}</span><span class="text-slate-600">未装备</span></div>`;
+          return `<div class="flex items-center gap-3 text-sm">
+            <div class="item-icon">${CULT.Icons.slot(slot)}</div>
+            <span class="flex-1">${label}</span>
+            <span class="text-slate-600">未装备</span>
+          </div>`;
         }
-        return `<div class="flex items-center justify-between text-sm">
-          <span>${label}：${item.name}</span>
+        return `<div class="flex items-center gap-3 text-sm">
+          <div class="item-icon rarity-${item.rarity}">${CULT.Icons.slot(slot)}</div>
+          <span class="flex-1">${label}：${item.name}</span>
           <button class="btn-secondary text-xs px-2 py-1" data-unequip-slot="${slot}">卸下</button>
         </div>`;
       })
@@ -168,12 +188,15 @@ CULT.UI = {
         const bonusText = Object.entries(item.bonuses)
           .map(([k, v]) => `${{ hp: '气血', atk: '攻击', def: '防御', spd: '速度' }[k]}+${v}`)
           .join(' ');
-        return `<div class="panel rarity-${item.rarity} border">
-          <div class="flex items-center justify-between">
-            <span class="font-medium">${item.name} ${count > 1 ? `x${count}` : ''}</span>
-            <button class="btn-secondary text-xs px-2 py-1" data-equip="${id}">装备</button>
+        return `<div class="panel rarity-${item.rarity} border flex gap-3 items-center">
+          <div class="item-icon rarity-${item.rarity}">${CULT.Icons.slot(item.slot)}</div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span class="font-medium">${item.name} ${count > 1 ? `x${count}` : ''}</span>
+              <button class="btn-secondary text-xs px-2 py-1" data-equip="${id}">装备</button>
+            </div>
+            <div class="text-xs text-slate-400 mt-1">${bonusText}</div>
           </div>
-          <div class="text-xs text-slate-400 mt-1">${bonusText}</div>
         </div>`;
       })
       .join('');
@@ -186,8 +209,9 @@ CULT.UI = {
     consContainer.innerHTML = consumableEntries
       .map(([id, count]) => {
         const item = CULT.Data.getConsumable(id);
-        return `<div class="flex items-center justify-between panel">
-          <div>
+        return `<div class="flex items-center gap-3 panel">
+          <div class="item-icon">${CULT.Icons.pill(item.type)}</div>
+          <div class="flex-1">
             <div class="font-medium">${item.name} x${count}</div>
             <div class="text-xs text-slate-400">${item.desc}</div>
           </div>
@@ -263,7 +287,7 @@ CULT.UI = {
       for (const eqId of event.loot.equipment) {
         const item = CULT.Data.getEquipment(eqId);
         CULT.UI.appendLog(state, `获得珍稀掉落：${item.name}！`, 'log-victory');
-        CULT.UI.lootQueue.push(item.name);
+        CULT.UI.lootQueue.push(item);
       }
       CULT.UI.maybeShowNextLoot();
     } else if (event.type === 'defeat') {
@@ -301,12 +325,33 @@ CULT.UI = {
 
     const face = CULT.UI.el('breakthrough-result-face');
     const text = CULT.UI.el('breakthrough-result-text');
-    face.className = `card-back flex items-center justify-center ${result.success ? 'success' : 'fail'}`;
+    face.className = `card-back flex items-center justify-center relative overflow-hidden ${result.success ? 'success' : 'fail'}`;
     text.textContent = result.success ? '突破成功！' : '突破失败';
 
     CULT.UI.el('breakthrough-card').classList.add('flipped');
     CULT.UI.el('breakthrough-confirm-btn').classList.add('hidden');
     CULT.UI.el('breakthrough-close-btn').classList.remove('hidden');
+
+    if (result.success) {
+      setTimeout(() => CULT.UI.spawnParticles('breakthrough-particles'), 600);
+    }
+  },
+
+  spawnParticles(containerId) {
+    const container = CULT.UI.el(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    const count = 16;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const distance = 40 + Math.random() * 30;
+      const particle = document.createElement('span');
+      particle.className = 'particle';
+      particle.style.setProperty('--px', `${Math.cos(angle) * distance}px`);
+      particle.style.setProperty('--py', `${Math.sin(angle) * distance}px`);
+      particle.style.animationDelay = `${Math.random() * 0.15}s`;
+      container.appendChild(particle);
+    }
   },
 
   closeBreakthroughModal() {
@@ -315,8 +360,9 @@ CULT.UI = {
 
   maybeShowNextLoot() {
     if (CULT.UI.lootModalOpen || CULT.UI.lootQueue.length === 0) return;
-    const name = CULT.UI.lootQueue.shift();
-    CULT.UI.el('loot-item-name').textContent = name;
+    const item = CULT.UI.lootQueue.shift();
+    CULT.UI.el('loot-item-name').textContent = item.name;
+    CULT.UI.el('loot-item-icon').innerHTML = CULT.Icons.slot(item.slot);
     CULT.UI.el('loot-modal').classList.remove('hidden');
     CULT.UI.lootModalOpen = true;
   },

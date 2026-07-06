@@ -11,11 +11,14 @@
 </head>
 <body class="min-h-screen bg-[#0b1020] text-slate-100">
 
-<header class="sticky top-0 z-40 bg-[#0b1020]/95 backdrop-blur border-b border-slate-800">
-  <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-    <h1 class="font-serif-sc text-lg font-bold text-amber-300">灵墟问道</h1>
+<header class="sticky top-0 z-40 bg-[#0b1020]/95 backdrop-blur border-b border-slate-800 header-ink">
+  <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between relative">
+    <h1 class="font-serif-sc text-lg font-bold text-amber-300 flex items-center gap-2">
+      <span id="header-taiji" class="header-taiji-icon"></span>
+      灵墟问道
+    </h1>
     <div class="flex items-center gap-1.5 text-sm text-amber-200">
-      <span>💎</span>
+      <span class="stone-icon">◆</span>
       <span id="header-spirit-stones">0</span>
       <span class="text-slate-400">灵石</span>
     </div>
@@ -33,9 +36,10 @@
 
   <!-- 主界面 -->
   <section id="main-screen" class="screen space-y-4">
-    <div class="panel">
+    <div class="panel panel-ornate">
       <div class="flex items-baseline justify-between">
-        <div>
+        <div class="flex items-center gap-2">
+          <span id="realm-icon" class="realm-icon"></span>
           <span id="realm-name" class="font-serif-sc text-2xl font-bold text-amber-300">练气</span>
           <span id="sub-level" class="ml-1 text-slate-400">第1层</span>
         </div>
@@ -62,14 +66,19 @@
     </div>
 
     <div class="panel">
-      <div id="monster-idle" class="text-slate-400 text-sm">正在寻找妖兽的踪迹...</div>
-      <div id="monster-panel" class="hidden">
-        <div class="flex items-center justify-between text-sm mb-1">
-          <span><span id="monster-tier-badge" class="tier-badge"></span> <span id="monster-name" class="font-medium"></span></span>
-          <span id="monster-hp-text">0 / 0</span>
-        </div>
-        <div class="progress-track">
-          <div id="monster-hp-bar" class="progress-fill bg-gradient-to-r from-emerald-600 to-emerald-400" style="width:100%"></div>
+      <div id="monster-idle" class="text-slate-400 text-sm flex items-center gap-2">
+        <span class="idle-pulse">◌</span> 正在寻找妖兽的踪迹...
+      </div>
+      <div id="monster-panel" class="hidden flex gap-3 items-start">
+        <div id="monster-aura-slot" class="shrink-0"></div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span><span id="monster-tier-badge" class="tier-badge"></span> <span id="monster-name" class="font-medium"></span></span>
+            <span id="monster-hp-text">0 / 0</span>
+          </div>
+          <div class="progress-track">
+            <div id="monster-hp-bar" class="progress-fill progress-fill-monster bg-gradient-to-r from-emerald-600 to-emerald-400" style="width:100%"></div>
+          </div>
         </div>
       </div>
       <div id="rest-banner" class="hidden mt-2 text-sm text-amber-300">你受了重伤，正在闭关疗养… (<span id="rest-ticks"></span>)</div>
@@ -163,10 +172,11 @@
     <div class="card-container mx-auto" id="breakthrough-card">
       <div class="card-inner">
         <div class="card-front flex items-center justify-center bg-slate-800 border border-amber-500/40">
-          <span class="text-4xl">☯</span>
+          <span id="breakthrough-front-icon" class="w-16 h-16 text-amber-300 taiji-spin"></span>
         </div>
-        <div class="card-back flex items-center justify-center" id="breakthrough-result-face">
-          <span id="breakthrough-result-text" class="text-lg font-bold"></span>
+        <div class="card-back flex items-center justify-center relative overflow-hidden" id="breakthrough-result-face">
+          <div id="breakthrough-particles" class="particle-layer"></div>
+          <span id="breakthrough-result-text" class="text-lg font-bold relative z-10"></span>
         </div>
       </div>
     </div>
@@ -186,7 +196,7 @@
       <div class="card-inner">
         <div class="card-front"></div>
         <div class="card-back flex flex-col items-center justify-center bg-gradient-to-br from-amber-600 to-amber-300 text-slate-900">
-          <span class="text-3xl mb-2">✦</span>
+          <span id="loot-item-icon" class="w-10 h-10 mb-2"></span>
           <span id="loot-item-name" class="font-bold"></span>
         </div>
       </div>
@@ -212,6 +222,7 @@
 
 <script src="js/namespace.js"></script>
 <script src="js/data.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/state.js"></script>
 <script src="js/combat.js"></script>
 <script src="js/offline.js"></script>
