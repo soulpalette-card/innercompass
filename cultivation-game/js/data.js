@@ -41,6 +41,8 @@ CULT.TUNING = {
   petExpGrowth: 1.15,
   petExpPerVictory: 5, // 出战宠物每次战斗胜利获得的经验
   petBonusPerLevel: 0.003, // 宠物在当前阶段内，每级额外叠加的加成
+  petAtkFractionOfPlayerBase: 0.15, // 单只出战宠物每回合伤害 = 玩家基础攻击的这个比例（再按阶段/品质/等级放大）
+  petFusionConversionRate: 0.8, // 融合时，被献祭宠物的已投入经验按此比例转给目标宠物
 
   monsterTierLevelOffset: { weak: -5, normal: 0, elite: 8, boss: 20 }, // 纯展示用，不影响实际战斗数值
 

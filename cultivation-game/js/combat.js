@@ -43,13 +43,14 @@ CULT.Combat = {
       spdMult += fabao.bonuses.spdMult || 0;
     }
 
-    const activePet = state.pets.owned.find((p) => p.instanceId === state.pets.activeId);
-    if (activePet) {
-      const stage = CULT.Data.getPetStage(activePet.level);
-      const quality = CULT.Data.getPetQuality(activePet.quality); // 旧存档没有 quality 字段时会兜底为"普通"
-      const petBonus = (stage.bonusMult + (activePet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel) * quality.statMult;
+    // 出战宠物（最多3只）叠加气血/防御/速度加成；攻击力改为战斗中单独一条伤害线（见 getPetRoundDamage），不再计入这里
+    for (const petId of (state.pets.activeIds || []).slice(0, 3)) {
+      const pet = state.pets.owned.find((p) => p.instanceId === petId);
+      if (!pet) continue;
+      const stage = CULT.Data.getPetStage(pet.level);
+      const quality = CULT.Data.getPetQuality(pet.quality); // 旧存档没有 quality 字段时会兜底为"普通"
+      const petBonus = (stage.bonusMult + (pet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel) * quality.statMult;
       hpMult += petBonus;
-      atkMult += petBonus;
       defMult += petBonus;
       spdMult += petBonus;
     }
@@ -85,6 +86,25 @@ CULT.Combat = {
       delta[stat] = (fabao.bonuses[stat] || 0) - (current ? current.bonuses[stat] || 0 : 0);
     }
     return delta;
+  },
+
+  // 单只出战宠物每回合造成的伤害：玩家自身基础攻击的一个比例，随宠物阶段/品质/等级放大
+  getPetRoundDamage(state, pet) {
+    const stage = CULT.Data.getPetStage(pet.level);
+    const quality = CULT.Data.getPetQuality(pet.quality);
+    const playerBase = CULT.Data.getBaseStats(state.character.realmId, state.character.subLevel);
+    const raw = playerBase.atk * CULT.TUNING.petAtkFractionOfPlayerBase
+      * (1 + stage.bonusMult * 2) * quality.statMult
+      * (1 + (pet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel);
+    return Math.max(0, Math.floor(raw));
+  },
+
+  // 出战宠物本回合的总伤害（用于战斗结算和离线估算，两处保持一致）
+  getActivePetsRoundDamage(state) {
+    return (state.pets.activeIds || []).slice(0, 3).reduce((sum, petId) => {
+      const pet = state.pets.owned.find((p) => p.instanceId === petId);
+      return sum + (pet ? CULT.Combat.getPetRoundDamage(state, pet) : 0);
+    }, 0);
   },
 
   getCultivationPerSecond(state, stats) {
@@ -147,9 +167,10 @@ CULT.Combat = {
     return result;
   },
 
-  // 出战宠物获得经验，可能连续跨越多个等级（沿用突破的"循环检查阈值"思路）
-  awardPetExp(state, amount) {
-    const pet = state.pets.owned.find((p) => p.instanceId === state.pets.activeId);
+  // 给指定的一只宠物加经验，可能连续跨越多个等级（沿用突破的"循环检查阈值"思路）
+  // 独立于出战状态，因为融合的目标宠物往往并未出战
+  grantExpToPet(state, instanceId, amount) {
+    const pet = state.pets.owned.find((p) => p.instanceId === instanceId);
     if (!pet) return;
     pet.exp += amount;
     let threshold = CULT.Data.getPetExpThreshold(pet.level);
@@ -160,13 +181,33 @@ CULT.Combat = {
     }
   },
 
+  // 所有出战宠物各自获得完整的经验（不按出战数量拆分）
+  awardPetExp(state, amount) {
+    for (const petId of state.pets.activeIds || []) {
+      CULT.Combat.grantExpToPet(state, petId, amount);
+    }
+  },
+
+  // 已投入某只宠物的总经验（历史消耗的所有阈值总和 + 当前已存的经验），供融合计算价值
+  getPetTotalInvestedExp(pet) {
+    let total = pet.exp;
+    for (let lvl = 1; lvl < pet.level; lvl++) {
+      total += CULT.Data.getPetExpThreshold(lvl);
+    }
+    return total;
+  },
+
+  getFusionExpValue(pet) {
+    return Math.floor(CULT.Combat.getPetTotalInvestedExp(pet) * CULT.TUNING.petFusionConversionRate);
+  },
+
   capturePet(state, speciesId, sourceMonsterLevel) {
     const instanceId = `${speciesId}_${CULT.utils.now()}_${Math.floor(Math.random() * 10000)}`;
     const level = Math.max(1, Math.floor((sourceMonsterLevel || 1) * 0.5));
     const quality = CULT.Data.rollPetQuality().id;
     const instance = { instanceId, speciesId, level, exp: 0, quality };
     state.pets.owned.push(instance);
-    if (!state.pets.activeId) state.pets.activeId = instanceId;
+    if (state.pets.activeIds.length < 3) state.pets.activeIds.push(instanceId);
     return instance;
   },
 
@@ -255,13 +296,15 @@ CULT.Combat = {
 
     const playerDamage = Math.max(1, stats.atk - state.combat.currentMonsterDef);
     const monsterDamage = Math.max(1, state.combat.currentMonsterAtk - stats.def);
+    const petDamage = CULT.Combat.getActivePetsRoundDamage(state);
 
-    state.combat.currentMonsterHp -= playerDamage;
-    character.hp -= monsterDamage;
+    state.combat.currentMonsterHp -= (playerDamage + petDamage);
+    character.hp -= monsterDamage; // 宠物不承受怪物的反击，只有玩家自己会掉血
 
     const event = {
       type: 'round',
       playerDamage,
+      petDamage,
       monsterDamage,
       monsterName: state.combat.currentMonsterName,
     };

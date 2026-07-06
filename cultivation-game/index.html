@@ -163,30 +163,21 @@
   <!-- 宠物 -->
   <section id="pets-screen" class="screen space-y-4" style="display:none">
     <div class="panel panel-ornate">
-      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">出战宠物</h2>
-      <div id="pet-active-empty" class="text-slate-500 text-sm hidden">尚未捕获任何宠物，击败妖兽时有几率捕获。</div>
-      <div id="pet-active-card" class="hidden flex gap-3 items-center">
-        <div id="pet-active-aura" class="shrink-0"></div>
-        <div class="flex-1">
-          <div class="flex items-center justify-between">
-            <span id="pet-active-name" class="font-medium"></span>
-            <span class="flex gap-1">
-              <span id="pet-active-stage" class="tier-badge"></span>
-              <span id="pet-active-quality" class="tier-badge"></span>
-            </span>
-          </div>
-          <div class="text-xs text-slate-400 mt-1">Lv.<span id="pet-active-level"></span></div>
-          <div class="progress-track mt-1">
-            <div id="pet-active-exp-bar" class="progress-fill bg-gradient-to-r from-purple-500 to-purple-300" style="width:0%"></div>
-          </div>
-          <div class="text-xs text-slate-500 mt-0.5" id="pet-active-exp-text"></div>
-        </div>
-      </div>
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">出战宠物（最多3只）</h2>
+      <div id="pet-active-slots" class="space-y-2"></div>
     </div>
     <div class="panel">
       <h2 class="font-serif-sc text-lg text-amber-300 mb-3">宠物图鉴</h2>
       <div id="pets-roster" class="space-y-2 text-sm"></div>
-      <div id="pets-roster-empty" class="text-slate-500 text-sm hidden">暂无宠物</div>
+      <div id="pets-roster-empty" class="text-slate-500 text-sm hidden">尚未捕获任何宠物，击败妖兽时有几率捕获。</div>
+    </div>
+    <div class="panel">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-serif-sc text-lg text-amber-300">宠物融合</h2>
+        <span id="fusion-preview" class="text-xs text-slate-400"></span>
+      </div>
+      <p class="text-xs text-slate-500 mb-2">勾选要献祭的宠物（出战中的宠物需先下场），选择一只目标宠物接收经验。</p>
+      <button id="fusion-confirm-btn" class="btn-danger w-full" disabled>融合</button>
     </div>
   </section>
 

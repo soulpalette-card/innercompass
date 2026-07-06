@@ -1,5 +1,5 @@
 CULT.SAVE_KEY = 'cultivation_game_save_v1';
-CULT.CURRENT_SAVE_VERSION = 1;
+CULT.CURRENT_SAVE_VERSION = 2;
 
 CULT.State = {
   createDefault() {
@@ -22,7 +22,7 @@ CULT.State = {
       equippedFabao: { attack: null, defense: null, boost: null },
       inventory: {}, // itemId -> count (covers equipment, fabao, consumables, materials)
       techniques: { learned: ['tech_basic_qi'] }, // 所有已修习功法同时叠加生效
-      pets: { owned: [], activeId: null }, // owned: [{ instanceId, speciesId, level, exp, quality }]
+      pets: { owned: [], activeIds: [] }, // owned: [{ instanceId, speciesId, level, exp, quality }]; activeIds: 最多3个出战宠物
       combat: { currentMonsterId: null, currentMonsterHp: null, log: [], isEliteChallenge: false },
       shop: { stock: [], refreshCost: 2, lastRefreshDate: '' },
       settings: { autoBreakthrough: false },
@@ -37,7 +37,18 @@ CULT.State = {
   },
 
   MIGRATIONS: {
-    // 1: 当前版本，无需迁移。以后格式变更时，在这里加 2: (s) => {...}
+    // v1 -> v2：单出战宠物 activeId 改为最多3个的 activeIds 数组
+    2: (s) => {
+      if (s.pets && s.pets.activeId && !s.pets.activeIds) {
+        s.pets.activeIds = [s.pets.activeId];
+      }
+      if (s.pets && !s.pets.activeIds) {
+        s.pets.activeIds = [];
+      }
+      if (s.pets) delete s.pets.activeId;
+      s.saveVersion = 2;
+      return s;
+    },
   },
 
   migrate(saved) {

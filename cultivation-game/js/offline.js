@@ -61,7 +61,10 @@ CULT.Offline = {
     const meditationExp = cultivationPerSecond * effectiveSeconds;
 
     const avgMonster = CULT.Offline.getAverageMonsterProfile(state);
-    const playerDamage = Math.max(1, stats.atk - avgMonster.def);
+    // 出战宠物的伤害已经从 computeStats 的 atk 加成里移出去了，离线估算要单独把它加回来，
+    // 否则养了宠物之后离线挂机反而比在线挂机估算得慢，产生落差
+    const petDamagePerRound = CULT.Combat.getActivePetsRoundDamage(state);
+    const playerDamage = Math.max(1, stats.atk - avgMonster.def) + petDamagePerRound;
     const roundsToKill = Math.max(1, Math.ceil(avgMonster.hp / playerDamage));
     const secondsPerKill = roundsToKill * (CULT.TUNING.tickIntervalMs / 1000);
     const estimatedKills = Math.floor(effectiveSeconds / secondsPerKill);

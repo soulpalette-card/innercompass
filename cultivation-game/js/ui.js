@@ -34,6 +34,16 @@ CULT.UI = {
     CULT.UI.el('elite-challenge-btn').addEventListener('click', () => {
       if (CULT.Game.startEliteChallenge()) CULT.UI.showScreen('main-screen');
     });
+
+    CULT.UI.el('fusion-confirm-btn').addEventListener('click', () => {
+      const sel = CULT.UI.fusionSelection;
+      if (!confirm(`确定要献祭 ${sel.sacrificeIds.length} 只宠物进行融合吗？此操作不可撤销。`)) return;
+      const result = CULT.Game.fusePets(sel.sacrificeIds, sel.targetId);
+      if (result) {
+        sel.sacrificeIds = [];
+        sel.targetId = null;
+      }
+    });
   },
 
   showScreen(screenId) {
@@ -354,56 +364,125 @@ CULT.UI = {
     });
   },
 
+  fusionSelection: { sacrificeIds: [], targetId: null }, // UI 本地状态，不写入存档
+
+  renderPetCard(pet) {
+    const species = CULT.Data.getPetSpecies(pet.speciesId);
+    const stage = CULT.Data.getPetStage(pet.level);
+    const quality = CULT.Data.getPetQuality(pet.quality);
+    const threshold = CULT.Data.getPetExpThreshold(pet.level);
+    const pct = CULT.utils.clamp((pet.exp / threshold) * 100, 0, 100);
+    return { species, stage, quality, threshold, pct };
+  },
+
   renderPets(state) {
-    const activePet = state.pets.owned.find((p) => p.instanceId === state.pets.activeId);
+    // 出战槽位：最多3个，空位显示占位卡
+    const slotsContainer = CULT.UI.el('pet-active-slots');
+    const activeIds = state.pets.activeIds || [];
+    slotsContainer.innerHTML = [0, 1, 2]
+      .map((i) => {
+        const pet = activeIds[i] ? state.pets.owned.find((p) => p.instanceId === activeIds[i]) : null;
+        if (!pet) {
+          return `<div class="flex items-center gap-3 text-sm text-slate-600 panel">
+            <div class="item-icon">?</div>
+            <span class="flex-1">空位</span>
+          </div>`;
+        }
+        const { species, stage, quality, threshold, pct } = CULT.UI.renderPetCard(pet);
+        return `<div class="flex gap-3 items-center panel">
+          <div class="shrink-0">${CULT.Icons.petAura(stage.id, species ? species.emoji : '?')}</div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span class="font-medium">${species ? species.name : pet.speciesId}</span>
+              <span class="flex gap-1">
+                <span class="tier-badge">${stage.name}</span>
+                <span class="tier-badge ${quality.id}">${quality.name}</span>
+              </span>
+            </div>
+            <div class="text-xs text-slate-400 mt-1">Lv.${pet.level}</div>
+            <div class="progress-track mt-1">
+              <div class="progress-fill bg-gradient-to-r from-purple-500 to-purple-300" style="width:${pct}%"></div>
+            </div>
+            <div class="text-xs text-slate-500 mt-0.5">${Math.floor(pet.exp)} / ${threshold}</div>
+          </div>
+          <button class="btn-secondary text-xs px-2 py-1" data-deactivate-pet="${pet.instanceId}">下场</button>
+        </div>`;
+      })
+      .join('');
+    slotsContainer.querySelectorAll('[data-deactivate-pet]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.deactivatePet(btn.dataset.deactivatePet));
+    });
 
-    CULT.UI.el('pet-active-empty').classList.toggle('hidden', !!activePet);
-    CULT.UI.el('pet-active-card').classList.toggle('hidden', !activePet);
-    if (activePet) {
-      const species = CULT.Data.getPetSpecies(activePet.speciesId);
-      const stage = CULT.Data.getPetStage(activePet.level);
-      const quality = CULT.Data.getPetQuality(activePet.quality);
-      CULT.UI.el('pet-active-name').textContent = species ? species.name : activePet.speciesId;
-      CULT.UI.el('pet-active-stage').textContent = stage.name;
-      CULT.UI.el('pet-active-quality').textContent = quality.name;
-      CULT.UI.el('pet-active-quality').className = `tier-badge ${quality.id}`;
-      CULT.UI.el('pet-active-level').textContent = activePet.level;
-      const threshold = CULT.Data.getPetExpThreshold(activePet.level);
-      const pct = CULT.utils.clamp((activePet.exp / threshold) * 100, 0, 100);
-      CULT.UI.el('pet-active-exp-bar').style.width = `${pct}%`;
-      CULT.UI.el('pet-active-exp-text').textContent = `${Math.floor(activePet.exp)} / ${threshold}`;
-
-      if (CULT.UI.renderedActivePetId !== activePet.instanceId) {
-        CULT.UI.el('pet-active-aura').innerHTML = CULT.Icons.petAura(stage.id, species ? species.emoji : '?');
-        CULT.UI.renderedActivePetId = activePet.instanceId;
-      }
-    } else {
-      CULT.UI.renderedActivePetId = null;
-    }
+    // 图鉴列表：出战/下场按钮 + 融合用的勾选/目标选择
+    const sel = CULT.UI.fusionSelection;
+    // 存档变化后（比如融合执行完）清掉已经不存在的选择，避免残留幽灵 id
+    sel.sacrificeIds = sel.sacrificeIds.filter((id) => state.pets.owned.some((p) => p.instanceId === id));
+    if (sel.targetId && !state.pets.owned.some((p) => p.instanceId === sel.targetId)) sel.targetId = null;
 
     const rosterContainer = CULT.UI.el('pets-roster');
     CULT.UI.el('pets-roster-empty').classList.toggle('hidden', state.pets.owned.length > 0);
     rosterContainer.innerHTML = state.pets.owned
       .map((pet) => {
-        const species = CULT.Data.getPetSpecies(pet.speciesId);
-        const stage = CULT.Data.getPetStage(pet.level);
-        const quality = CULT.Data.getPetQuality(pet.quality);
-        const isActive = pet.instanceId === state.pets.activeId;
+        const { species, stage, quality } = CULT.UI.renderPetCard(pet);
+        const isActive = activeIds.includes(pet.instanceId);
         const actionHtml = isActive
-          ? `<span class="text-xs text-emerald-400">出战中</span>`
-          : `<button class="btn-secondary text-xs px-2 py-1" data-set-active-pet="${pet.instanceId}">设为出战</button>`;
-        return `<div class="flex items-center justify-between panel">
-          <div>
-            <div class="font-medium">${species ? species.name : pet.speciesId} <span class="tier-badge">${stage.name}</span> <span class="tier-badge ${quality.id}">${quality.name}</span></div>
-            <div class="text-xs text-slate-400">Lv.${pet.level}</div>
+          ? `<button class="btn-secondary text-xs px-2 py-1" data-deactivate-pet="${pet.instanceId}">下场</button>`
+          : `<button class="btn-secondary text-xs px-2 py-1" data-activate-pet="${pet.instanceId}" ${activeIds.length >= 3 ? 'disabled' : ''}>出战</button>`;
+        const isSacrifice = sel.sacrificeIds.includes(pet.instanceId);
+        const isTarget = sel.targetId === pet.instanceId;
+        return `<div class="panel space-y-1.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-medium">${species ? species.name : pet.speciesId}</span>
+              <span class="tier-badge">${stage.name}</span>
+              <span class="tier-badge ${quality.id}">${quality.name}</span>
+              <span class="text-xs text-slate-400">Lv.${pet.level}</span>
+            </div>
+            ${actionHtml}
           </div>
-          ${actionHtml}
+          <div class="flex items-center gap-4 text-xs text-slate-400">
+            <label class="flex items-center gap-1.5">
+              <input type="checkbox" data-fusion-sacrifice="${pet.instanceId}" ${isSacrifice ? 'checked' : ''} ${isActive || isTarget ? 'disabled' : ''} />
+              选为材料
+            </label>
+            <label class="flex items-center gap-1.5">
+              <input type="radio" name="fusion-target" data-fusion-target="${pet.instanceId}" ${isTarget ? 'checked' : ''} ${isSacrifice ? 'disabled' : ''} />
+              设为目标
+            </label>
+          </div>
         </div>`;
       })
       .join('');
-    rosterContainer.querySelectorAll('[data-set-active-pet]').forEach((btn) => {
-      btn.addEventListener('click', () => CULT.Game.setActivePet(btn.dataset.setActivePet));
+    rosterContainer.querySelectorAll('[data-activate-pet]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.activatePet(btn.dataset.activatePet));
     });
+    rosterContainer.querySelectorAll('[data-deactivate-pet]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.deactivatePet(btn.dataset.deactivatePet));
+    });
+    rosterContainer.querySelectorAll('[data-fusion-sacrifice]').forEach((cb) => {
+      cb.addEventListener('change', (e) => {
+        const id = cb.dataset.fusionSacrifice;
+        if (e.target.checked) sel.sacrificeIds.push(id);
+        else sel.sacrificeIds = sel.sacrificeIds.filter((x) => x !== id);
+        CULT.UI.renderPets(state);
+      });
+    });
+    rosterContainer.querySelectorAll('[data-fusion-target]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        sel.targetId = radio.dataset.fusionTarget;
+        CULT.UI.renderPets(state);
+      });
+    });
+
+    // 融合预览与确认按钮
+    const sacrificePets = sel.sacrificeIds
+      .map((id) => state.pets.owned.find((p) => p.instanceId === id))
+      .filter(Boolean);
+    const previewExp = sacrificePets.reduce((sum, p) => sum + CULT.Combat.getFusionExpValue(p), 0);
+    const canFuse = sacrificePets.length > 0 && !!sel.targetId;
+    CULT.UI.el('fusion-preview').textContent = canFuse ? `预计获得经验：${previewExp}` : '';
+    const fuseBtn = CULT.UI.el('fusion-confirm-btn');
+    fuseBtn.disabled = !canFuse;
   },
 
   // 根据 id 前缀猜一个展示图标，商店/背包共用
@@ -521,9 +600,10 @@ CULT.UI = {
     if (event.type === 'monster_spawned') {
       CULT.UI.appendLog(state, `你遇到了 ${event.monster.name}！`);
     } else if (event.type === 'round') {
+      const petPart = event.petDamage > 0 ? `，出战宠物造成 ${event.petDamage} 点伤害` : '';
       CULT.UI.appendLog(
         state,
-        `你对${event.monsterName}造成 ${event.playerDamage} 点伤害，${event.monsterName}对你造成 ${event.monsterDamage} 点伤害。`
+        `你对${event.monsterName}造成 ${event.playerDamage} 点伤害${petPart}，${event.monsterName}对你造成 ${event.monsterDamage} 点伤害。`
       );
     } else if (event.type === 'victory') {
       const parts = [`获得 ${Math.floor(event.loot.exp)} 修为`, `${event.loot.stones} 灵石`];

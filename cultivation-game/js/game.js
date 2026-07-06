@@ -111,15 +111,47 @@ CULT.Game = {
     return true;
   },
 
-  setActivePet(instanceId) {
+  activatePet(instanceId) {
     const state = CULT.Game.state;
     const pet = state.pets.owned.find((p) => p.instanceId === instanceId);
     if (!pet) return false;
-    state.pets.activeId = instanceId;
+    if (state.pets.activeIds.includes(instanceId)) return false;
+    if (state.pets.activeIds.length >= 3) return false;
+    state.pets.activeIds.push(instanceId);
 
     CULT.Game.saveNow();
     CULT.UI.refresh(state);
     return true;
+  },
+
+  deactivatePet(instanceId) {
+    const state = CULT.Game.state;
+    const idx = state.pets.activeIds.indexOf(instanceId);
+    if (idx === -1) return false;
+    state.pets.activeIds.splice(idx, 1);
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
+  // 把 sacrificeIds 这些宠物献祭掉，经验按投入比例转给 targetId；出战中的宠物必须先下场才能被献祭
+  fusePets(sacrificeIds, targetId) {
+    const state = CULT.Game.state;
+    if (!sacrificeIds || sacrificeIds.length === 0 || sacrificeIds.includes(targetId)) return false;
+    const target = state.pets.owned.find((p) => p.instanceId === targetId);
+    if (!target) return false;
+    const sacrifices = sacrificeIds.map((id) => state.pets.owned.find((p) => p.instanceId === id));
+    if (sacrifices.some((p) => !p)) return false;
+    if (sacrifices.some((p) => state.pets.activeIds.includes(p.instanceId))) return false;
+
+    const totalExp = sacrifices.reduce((sum, p) => sum + CULT.Combat.getFusionExpValue(p), 0);
+    state.pets.owned = state.pets.owned.filter((p) => !sacrificeIds.includes(p.instanceId));
+    CULT.Combat.grantExpToPet(state, targetId, totalExp);
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return { success: true, expGranted: totalExp };
   },
 
   useConsumable(itemId) {
