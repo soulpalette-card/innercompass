@@ -41,6 +41,17 @@ CULT.TUNING = {
   petExpGrowth: 1.15,
   petExpPerVictory: 5, // 出战宠物每次战斗胜利获得的经验
   petBonusPerLevel: 0.003, // 宠物在当前阶段内，每级额外叠加的加成
+
+  monsterTierLevelOffset: { weak: -5, normal: 0, elite: 8, boss: 20 }, // 纯展示用，不影响实际战斗数值
+
+  eliteChallengeBaseCost: 50,
+  eliteChallengeCostGrowth: 1.4, // 每跨一个大境界，挑战花费按此倍率增长
+  eliteChallengeExtraMult: 1.5, // 精英关卡怪物在原有难度系数基础上再乘的强化倍率
+
+  shopRefreshBaseCost: 2,
+  shopStockSize: 6,
+  shopSellRateOfBuyPrice: 0.35,
+  rarityBasePrice: { common: 20, uncommon: 60, rare: 220, epic: 900 },
 };
 
 // 怪物：数值以"相对玩家当前基础属性的倍率"表示，自动随玩家境界缩放
@@ -55,7 +66,7 @@ CULT.MONSTERS = [
       fabao: [{ id: 'fabao_atk_leihuo', chance: 0.004 }], pets: [{ id: 'pet_wolf', chance: 0.005 }] } },
   { id: 'boar', name: '铁鬃野猪', minRealm: 0, tier: 'normal', emoji: '\u{1F417}',
     mult: { hp: 1.0, atk: 0.6, def: 0.8 },
-    loot: { expRange: [10, 18], stonesRange: [6, 14], materials: [{ id: 'mat_boar_hide', chance: 0.3 }], equipment: [{ id: 'eq_armor_xuantie', chance: 0.012 }],
+    loot: { expRange: [10, 18], stonesRange: [6, 14], materials: [{ id: 'mat_boar_hide', chance: 0.3 }], equipment: [{ id: 'eq_armor_xuantie', chance: 0.012 }, { id: 'eq_gloves_longzhua', chance: 0.012 }],
       fabao: [{ id: 'fabao_def_xuangui', chance: 0.004 }], pets: [{ id: 'pet_boar', chance: 0.005 }] } },
   { id: 'elite_fox', name: '九尾妖狐', minRealm: 1, tier: 'elite', emoji: '\u{1F98A}',
     mult: { hp: 1.4, atk: 1.2, def: 0.9 },
@@ -67,15 +78,15 @@ CULT.MONSTERS = [
       fabao: [{ id: 'fabao_def_wushuang', chance: 0.015 }, { id: 'fabao_boost_hunyuan', chance: 0.01 }] } },
   { id: 'crane', name: '玄羽仙鹤', minRealm: 3, tier: 'normal', emoji: '\u{1F54A}️',
     mult: { hp: 0.9, atk: 0.9, def: 0.7 },
-    loot: { expRange: [80, 140], stonesRange: [60, 110], materials: [{ id: 'mat_crane_feather', chance: 0.25 }], equipment: [],
+    loot: { expRange: [80, 140], stonesRange: [60, 110], materials: [{ id: 'mat_crane_feather', chance: 0.25 }], equipment: [{ id: 'eq_boots_yunxing', chance: 0.015 }],
       pets: [{ id: 'pet_crane', chance: 0.007 }] } },
   { id: 'elite_python', name: '玄冥蛟蟒', minRealm: 3, tier: 'elite', emoji: '\u{1F40D}',
     mult: { hp: 1.5, atk: 1.3, def: 1.0 },
-    loot: { expRange: [180, 300], stonesRange: [120, 220], materials: [{ id: 'mat_python_scale', chance: 0.2 }], equipment: [{ id: 'eq_armor_xuanming', chance: 0.02 }],
+    loot: { expRange: [180, 300], stonesRange: [120, 220], materials: [{ id: 'mat_python_scale', chance: 0.2 }], equipment: [{ id: 'eq_armor_xuanming', chance: 0.02 }, { id: 'eq_boots_pojun', chance: 0.015 }],
       fabao: [{ id: 'fabao_def_wushuang', chance: 0.006 }], pets: [{ id: 'pet_python', chance: 0.007 }] } },
   { id: 'boss_yuanying', name: '元婴期魔尊', minRealm: 3, tier: 'boss', emoji: '\u{1F47A}',
     mult: { hp: 2.5, atk: 1.8, def: 1.3 },
-    loot: { expRange: [900, 1500], stonesRange: [700, 1200], materials: [{ id: 'mat_demon_core', chance: 0.6 }], equipment: [{ id: 'eq_ring_ziyan', chance: 0.05 }],
+    loot: { expRange: [900, 1500], stonesRange: [700, 1200], materials: [{ id: 'mat_demon_core', chance: 0.6 }], equipment: [{ id: 'eq_ring_ziyan', chance: 0.05 }, { id: 'eq_gloves_jinlin', chance: 0.03 }],
       fabao: [{ id: 'fabao_atk_taiyi', chance: 0.015 }, { id: 'fabao_boost_taiji', chance: 0.008 }] } },
   { id: 'phantom', name: '化神虚影', minRealm: 4, tier: 'normal', emoji: '\u{1F47B}',
     mult: { hp: 1.0, atk: 1.0, def: 0.8 },
@@ -127,13 +138,52 @@ CULT.EQUIPMENT = [
   { id: 'eq_armor_xuanming', name: '玄冥战袍', slot: 'armor', rarity: 'rare', bonuses: { def: 60, hp: 400 } },
   { id: 'eq_ring_lingxi', name: '灵犀指环', slot: 'accessory', rarity: 'uncommon', bonuses: { spd: 12, hp: 60 } },
   { id: 'eq_ring_ziyan', name: '紫炎戒', slot: 'accessory', rarity: 'epic', bonuses: { atk: 90, def: 30 } },
+  { id: 'eq_boots_yunxing', name: '云行靴', slot: 'boots', rarity: 'uncommon', bonuses: { spd: 15 } },
+  { id: 'eq_boots_pojun', name: '破军战靴', slot: 'boots', rarity: 'rare', bonuses: { spd: 30, hp: 150 } },
+  { id: 'eq_gloves_longzhua', name: '龙爪手套', slot: 'gloves', rarity: 'uncommon', bonuses: { atk: 25 } },
+  { id: 'eq_gloves_jinlin', name: '金鳞护手', slot: 'gloves', rarity: 'rare', bonuses: { atk: 45, def: 20 } },
 ];
 
 // 消耗品
 CULT.CONSUMABLES = [
-  { id: 'pill_ju_qi', name: '聚气丹', type: 'exp_boost', desc: '立即获得一定修为。', effect: { flatExp: 500 } },
-  { id: 'pill_po_jing', name: '破境丹', type: 'breakthrough_boost', desc: '下一次突破成功率提升。', effect: { successChanceBonus: 0.15 } },
-  { id: 'pill_liao_shang', name: '疗伤丹', type: 'heal', desc: '立即回复全部气血。', effect: { healPercent: 1.0 } },
+  { id: 'pill_ju_qi', name: '聚气丹', type: 'exp_boost', desc: '立即获得一定修为。', effect: { flatExp: 500 }, price: 80 },
+  { id: 'pill_po_jing', name: '破境丹', type: 'breakthrough_boost', desc: '下一次突破成功率提升。', effect: { successChanceBonus: 0.15 }, price: 150 },
+  { id: 'pill_liao_shang', name: '疗伤丹', type: 'heal', desc: '立即回复全部气血。', effect: { healPercent: 1.0 }, price: 50 },
+  { id: 'pill_atk_boost', name: '锐金丹', type: 'stat_boost', desc: '永久提升攻击。', effect: { stat: 'atk', amount: 25 }, price: 200 },
+  { id: 'pill_def_boost', name: '玄甲丹', type: 'stat_boost', desc: '永久提升防御。', effect: { stat: 'def', amount: 15 }, price: 180 },
+  { id: 'pill_spd_boost', name: '疾风丹', type: 'stat_boost', desc: '永久提升速度。', effect: { stat: 'spd', amount: 10 }, price: 150 },
+  { id: 'pill_hp_boost', name: '培元丹', type: 'stat_boost', desc: '永久提升气血上限。', effect: { stat: 'hp', amount: 100 }, price: 150 },
+];
+
+// 炼制材料（怪物掉落），供炼丹配方和商店定价引用
+CULT.MATERIALS = [
+  { id: 'mat_slime_core', name: '史莱姆核心', rarity: 'common' },
+  { id: 'mat_wolf_fang', name: '妖狼獠牙', rarity: 'common' },
+  { id: 'mat_boar_hide', name: '野猪硬皮', rarity: 'common' },
+  { id: 'mat_fox_bead', name: '妖狐内丹', rarity: 'uncommon' },
+  { id: 'mat_demon_core', name: '魔君精魄', rarity: 'rare' },
+  { id: 'mat_crane_feather', name: '仙鹤羽毛', rarity: 'uncommon' },
+  { id: 'mat_python_scale', name: '蛟蟒鳞片', rarity: 'rare' },
+  { id: 'mat_phantom_dust', name: '虚影灵尘', rarity: 'rare' },
+];
+
+// 炼丹固定配方：材料组合 -> 丹药
+CULT.RECIPES = [
+  { id: 'recipe_qi_pill', name: '聚气丹方', resultId: 'pill_ju_qi', resultCount: 1, materials: { mat_slime_core: 3, mat_wolf_fang: 2 } },
+  { id: 'recipe_breakthrough_pill', name: '破境丹方', resultId: 'pill_po_jing', resultCount: 1, materials: { mat_boar_hide: 2, mat_fox_bead: 1 } },
+  { id: 'recipe_heal_pill', name: '疗伤丹方', resultId: 'pill_liao_shang', resultCount: 1, materials: { mat_wolf_fang: 2, mat_boar_hide: 2 } },
+  { id: 'recipe_atk_pill', name: '锐金丹方', resultId: 'pill_atk_boost', resultCount: 1, materials: { mat_demon_core: 1, mat_python_scale: 2 } },
+  { id: 'recipe_def_pill', name: '玄甲丹方', resultId: 'pill_def_boost', resultCount: 1, materials: { mat_boar_hide: 3, mat_fox_bead: 1 } },
+  { id: 'recipe_spd_pill', name: '疾风丹方', resultId: 'pill_spd_boost', resultCount: 1, materials: { mat_crane_feather: 3 } },
+  { id: 'recipe_hp_pill', name: '培元丹方', resultId: 'pill_hp_boost', resultCount: 1, materials: { mat_wolf_fang: 2, mat_phantom_dust: 1 } },
+];
+
+// 宠物品质：复用现有的稀有度体系（common/uncommon/rare/epic），捕获时随机抽取
+CULT.PET_QUALITIES = [
+  { id: 'common', name: '普通', weight: 60, statMult: 1.0 },
+  { id: 'uncommon', name: '优良', weight: 25, statMult: 1.15 },
+  { id: 'rare', name: '精良', weight: 12, statMult: 1.35 },
+  { id: 'epic', name: '极品', weight: 3, statMult: 1.6 },
 ];
 
 // 功法：被动加成，所有已修习的功法同时生效（叠加），修习需要消耗灵石
@@ -221,5 +271,76 @@ CULT.Data = {
 
   getPetExpThreshold(level) {
     return Math.floor(CULT.TUNING.petExpBaseThreshold * Math.pow(CULT.TUNING.petExpGrowth, level - 1));
+  },
+
+  getMaterial(id) {
+    return CULT.MATERIALS.find((m) => m.id === id);
+  },
+
+  getRecipe(id) {
+    return CULT.RECIPES.find((r) => r.id === id);
+  },
+
+  // 纯展示用的怪物等级：不影响 instantiateMonster 里的实际战斗数值
+  getMonsterLevel(state, tier) {
+    const idx = CULT.Data.getGlobalLevelIndex(state.character.realmId, state.character.subLevel);
+    const offset = CULT.TUNING.monsterTierLevelOffset[tier] || 0;
+    return Math.max(1, idx + 1 + offset);
+  },
+
+  rollPetQuality() {
+    return CULT.utils.weightedPick(CULT.PET_QUALITIES, (q) => q.weight);
+  },
+
+  getPetQuality(id) {
+    return CULT.PET_QUALITIES.find((q) => q.id === id) || CULT.PET_QUALITIES[0];
+  },
+
+  getEliteChallengeCost(realmId) {
+    return Math.floor(CULT.TUNING.eliteChallengeBaseCost * Math.pow(CULT.TUNING.eliteChallengeCostGrowth, realmId));
+  },
+
+  rollWeightedFabao() {
+    const weights = { common: 50, uncommon: 25, rare: 15, epic: 4 };
+    return CULT.utils.weightedPick(CULT.FABAO, (f) => weights[f.rarity] || 1);
+  },
+
+  // 商店买入价：装备/法宝/材料按稀有度定价，丹药用固定 price 字段
+  getShopBuyPrice(itemId) {
+    if (itemId.startsWith('eq_')) {
+      return CULT.TUNING.rarityBasePrice[CULT.Data.getEquipment(itemId).rarity] * 3;
+    }
+    if (itemId.startsWith('fabao_')) {
+      return CULT.TUNING.rarityBasePrice[CULT.Data.getFabao(itemId).rarity] * 5;
+    }
+    if (itemId.startsWith('pill_')) {
+      return CULT.Data.getConsumable(itemId).price;
+    }
+    const material = CULT.Data.getMaterial(itemId);
+    return CULT.TUNING.rarityBasePrice[material ? material.rarity : 'common'];
+  },
+
+  getShopSellPrice(itemId) {
+    return Math.max(1, Math.floor(CULT.Data.getShopBuyPrice(itemId) * CULT.TUNING.shopSellRateOfBuyPrice));
+  },
+
+  // 随机生成一批商店商品：装备/法宝/丹药/材料混合池
+  generateShopStock(state) {
+    const pool = [
+      ...CULT.EQUIPMENT.map((e) => ({ itemId: e.id, qty: 1 })),
+      ...CULT.FABAO.map((f) => ({ itemId: f.id, qty: 1 })),
+      ...CULT.CONSUMABLES.map((c) => ({ itemId: c.id, qty: CULT.utils.randInt(3, 5) })),
+      ...CULT.MATERIALS.map((m) => ({ itemId: m.id, qty: CULT.utils.randInt(3, 6) })),
+    ];
+    const stock = [];
+    const usedIndexes = new Set();
+    const stockSize = Math.min(CULT.TUNING.shopStockSize, pool.length);
+    while (stock.length < stockSize) {
+      const idx = Math.floor(Math.random() * pool.length);
+      if (usedIndexes.has(idx)) continue;
+      usedIndexes.add(idx);
+      stock.push(pool[idx]);
+    }
+    return stock;
   },
 };

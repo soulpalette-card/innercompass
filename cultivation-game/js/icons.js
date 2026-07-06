@@ -18,6 +18,15 @@ CULT.Icons = {
         <path d="M9.3 9.5L12 3.5l2.7 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
         <path d="M12 3.5l-1.6 3.4h3.2z" fill="currentColor"/>
       `,
+      boots: `
+        <path d="M9 3v8.5l-4.3 3.6c-.6.5-.2 1.4.5 1.4H19c.6 0 1-.4 1-1v-2.8c0-.5-.3-.9-.8-1L14 10.5V3z"
+          fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M9 3h5" stroke="currentColor" stroke-width="1.5"/>
+      `,
+      gloves: `
+        <path d="M7 11V6a1.4 1.4 0 0 1 2.8 0v3.5M9.8 9.2V5a1.4 1.4 0 0 1 2.8 0v4M12.6 9V5.6a1.4 1.4 0 0 1 2.8 0V10M15.4 10.3V7.6a1.3 1.3 0 0 1 2.6 0v6.4c0 3-2 5.5-5 5.5h-1c-2.6 0-4.7-1.6-5.6-4L6 12.5"
+          fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      `,
     };
     return `<svg viewBox="0 0 24 24" class="icon-svg ${extraClass || ''}" fill="none">${paths[slotName] || ''}</svg>`;
   },
@@ -93,6 +102,36 @@ CULT.Icons = {
     };
     const color = ringColors[stageId] != null ? ringColors[stageId] : '#94a3b8';
     return CULT.Icons._auraRing(color, emoji, `stage-aura-${stageId}`);
+  },
+
+  coin(extraClass) {
+    return `
+      <svg viewBox="0 0 24 24" class="icon-svg ${extraClass || ''}">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M12 7v10M9.5 9.5c0-1.4 1.1-2 2.5-2s2.5.7 2.5 1.8c0 2.4-5 1.7-5 4.1 0 1.1 1.1 1.8 2.5 1.8s2.5-.6 2.5-2"
+          fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+    `;
+  },
+
+  cauldron(extraClass) {
+    return `
+      <svg viewBox="0 0 24 24" class="icon-svg ${extraClass || ''}">
+        <path d="M4 10h16l-1.5 7a3 3 0 0 1-3 2.5H8.5a3 3 0 0 1-3-2.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M2 8.5c1.5-1.5 3-2 4-.5M9 8c1-2 1.5-3.5 3-4M15 8c1-1.8 2.5-2 4-.8" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <ellipse cx="12" cy="10" rx="8" ry="1.4" fill="currentColor" opacity="0.5"/>
+      </svg>
+    `;
+  },
+
+  swords(extraClass) {
+    return `
+      <svg viewBox="0 0 24 24" class="icon-svg ${extraClass || ''}">
+        <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="20" y1="4" x2="4" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M4 4l3 .5.5 3M20 4l-3 .5-.5 3M4 20l3-.5.5-3M20 20l-3-.5-.5-3" fill="none" stroke="currentColor" stroke-width="1.3"/>
+      </svg>
+    `;
   },
 
   category(cat, extraClass) {

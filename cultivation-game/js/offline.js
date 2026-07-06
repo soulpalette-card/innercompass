@@ -16,6 +16,7 @@ CULT.Offline = {
     const equipmentChances = {};
     const fabaoChances = {};
     const petChances = {};
+    const petLevels = {}; // 每个宠物种类固定绑定到它来源怪物的等级，不做加权平均
 
     monsters.forEach((m, i) => {
       const w = weights[i] / totalWeight;
@@ -36,10 +37,11 @@ CULT.Offline = {
       }
       for (const pet of m.loot.pets || []) {
         petChances[pet.id] = (petChances[pet.id] || 0) + pet.chance * w;
+        petLevels[pet.id] = CULT.Data.getMonsterLevel(state, m.tier);
       }
     });
 
-    return { hp, atk, def, expMid, stonesMid, materialChances, equipmentChances, fabaoChances, petChances };
+    return { hp, atk, def, expMid, stonesMid, materialChances, equipmentChances, fabaoChances, petChances, petLevels };
   },
 
   // 期望次数的整数部分直接发放，小数部分按概率再抽一次，避免离线时间越长掉落量越"确定"而失真
@@ -100,6 +102,7 @@ CULT.Offline = {
       equipmentGained,
       fabaoGained,
       petsGained,
+      petLevels: avgMonster.petLevels,
       estimatedKills,
       shouldShow: elapsedMs >= CULT.TUNING.offlineMinSecondsToShowSummary * 1000,
     };
@@ -121,7 +124,7 @@ CULT.Offline = {
       fabaoCount += count;
     }
     for (const speciesId of progress.petsGained) {
-      CULT.Combat.capturePet(state, speciesId);
+      CULT.Combat.capturePet(state, speciesId, progress.petLevels ? progress.petLevels[speciesId] : 1);
     }
     if (progress.estimatedKills > 0) {
       CULT.Combat.awardPetExp(state, CULT.TUNING.petExpPerVictory * progress.estimatedKills);

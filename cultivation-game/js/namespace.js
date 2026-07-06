@@ -48,6 +48,12 @@ CULT.utils = {
     return sign + value.toFixed(decimals) + units[unitIndex];
   },
 
+  // 本地日历日期字符串（不用 toISOString，因为那是 UTC，跟玩家本地的"今天"对不上）
+  todayDateString(d) {
+    const dt = d || new Date();
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  },
+
   formatDuration(ms) {
     const totalSeconds = Math.max(0, Math.floor(ms / 1000));
     const h = Math.floor(totalSeconds / 3600);

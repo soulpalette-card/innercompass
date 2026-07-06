@@ -24,6 +24,8 @@ CULT.Game = {
 
     state.character.cultivation += CULT.Combat.getCultivationPerSecond(state, stats) * dtSeconds;
 
+    CULT.Game.ensureShopFresh();
+
     const event = CULT.Combat.tick(state, stats);
     CULT.UI.onCombatEvent(event);
 
@@ -134,6 +136,8 @@ CULT.Game = {
       const stats = CULT.Combat.computeStats(state);
       state.character.hpMax = stats.hp;
       state.character.hp = Math.floor(state.character.hpMax * item.effect.healPercent);
+    } else if (item.type === 'stat_boost') {
+      state.character.alchemyBonuses[item.effect.stat] += item.effect.amount;
     }
 
     state.inventory[itemId] -= 1;
@@ -172,6 +176,110 @@ CULT.Game = {
   setAutoBreakthrough(enabled) {
     CULT.Game.state.settings.autoBreakthrough = enabled;
     CULT.Game.saveNow();
+  },
+
+  // 每天第一次进入/tick 到时，重置刷新费用并重新生成商店库存
+  ensureShopFresh() {
+    const state = CULT.Game.state;
+    const today = CULT.utils.todayDateString();
+    if (state.shop.lastRefreshDate !== today) {
+      state.shop.refreshCost = CULT.TUNING.shopRefreshBaseCost;
+      state.shop.lastRefreshDate = today;
+      state.shop.stock = CULT.Data.generateShopStock(state);
+    }
+  },
+
+  refreshShop() {
+    const state = CULT.Game.state;
+    const cost = state.shop.refreshCost;
+    if (state.character.spiritStones < cost) return false;
+
+    state.character.spiritStones -= cost;
+    state.shop.stock = CULT.Data.generateShopStock(state);
+    state.shop.refreshCost = cost * 2;
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
+  buyShopItem(itemId) {
+    const state = CULT.Game.state;
+    const stockEntry = state.shop.stock.find((s) => s.itemId === itemId);
+    if (!stockEntry || stockEntry.qty <= 0) return false;
+    const price = CULT.Data.getShopBuyPrice(itemId);
+    if (state.character.spiritStones < price) return false;
+
+    state.character.spiritStones -= price;
+    state.inventory[itemId] = (state.inventory[itemId] || 0) + 1;
+    stockEntry.qty -= 1;
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
+  sellItem(itemId, count) {
+    const state = CULT.Game.state;
+    const sellCount = count || 1;
+    if (!state.inventory[itemId] || state.inventory[itemId] < sellCount) return false;
+
+    const price = CULT.Data.getShopSellPrice(itemId);
+    state.character.spiritStones += price * sellCount;
+    state.inventory[itemId] -= sellCount;
+    if (state.inventory[itemId] <= 0) delete state.inventory[itemId];
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
+  craftPotion(recipeId) {
+    const state = CULT.Game.state;
+    const recipe = CULT.Data.getRecipe(recipeId);
+    if (!recipe) return false;
+    for (const [matId, needed] of Object.entries(recipe.materials)) {
+      if ((state.inventory[matId] || 0) < needed) return false;
+    }
+
+    for (const [matId, needed] of Object.entries(recipe.materials)) {
+      state.inventory[matId] -= needed;
+      if (state.inventory[matId] <= 0) delete state.inventory[matId];
+    }
+    state.inventory[recipe.resultId] = (state.inventory[recipe.resultId] || 0) + recipe.resultCount;
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
+  startEliteChallenge() {
+    const state = CULT.Game.state;
+    if (state.combat.currentMonsterId) return false; // 不打断正在进行的战斗
+    if (state.character.restTicksRemaining > 0) return false; // 闭关疗养中不能挑战
+
+    const cost = CULT.Data.getEliteChallengeCost(state.character.realmId);
+    if (state.character.spiritStones < cost) return false;
+
+    const bossPool = CULT.MONSTERS.filter((m) => m.tier === 'boss' && m.minRealm <= state.character.realmId);
+    const elitePool = CULT.MONSTERS.filter((m) => m.tier === 'elite' && m.minRealm <= state.character.realmId);
+    const pool = bossPool.length > 0 ? bossPool : (elitePool.length > 0 ? elitePool : CULT.MONSTERS);
+    const monsterDef = CULT.utils.pick(pool);
+    const instance = CULT.Combat.instantiateMonster(monsterDef, state, CULT.TUNING.eliteChallengeExtraMult);
+
+    state.character.spiritStones -= cost;
+    state.combat.currentMonsterId = instance.id;
+    state.combat.currentMonsterName = instance.name + '（精英挑战）';
+    state.combat.currentMonsterTier = instance.tier;
+    state.combat.currentMonsterHp = instance.hp;
+    state.combat.currentMonsterHpMax = instance.hp;
+    state.combat.currentMonsterAtk = instance.atk;
+    state.combat.currentMonsterDef = instance.def;
+    state.combat.isEliteChallenge = true;
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
   },
 
   exportSave() {

@@ -189,6 +189,10 @@ body {
 .tier-badge.normal { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
 .tier-badge.elite { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
 .tier-badge.boss { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
+.tier-badge.common { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+.tier-badge.uncommon { background: rgba(34, 197, 94, 0.2); color: #6ee7b7; }
+.tier-badge.rare { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.tier-badge.epic { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
 
 .rarity-common { border-color: rgba(148, 163, 184, 0.4); }
 .rarity-uncommon { border-color: rgba(34, 197, 94, 0.4); box-shadow: 0 0 10px rgba(34, 197, 94, 0.12); }

@@ -30,6 +30,9 @@
     <button class="nav-btn" data-screen="techniques-screen">功法</button>
     <button class="nav-btn" data-screen="fabao-screen">法宝</button>
     <button class="nav-btn" data-screen="pets-screen">宠物</button>
+    <button class="nav-btn" data-screen="shop-screen">商店</button>
+    <button class="nav-btn" data-screen="alchemy-screen">炼丹</button>
+    <button class="nav-btn" data-screen="elite-screen">秘境</button>
     <button class="nav-btn" data-screen="settings-screen">设置</button>
   </nav>
 </header>
@@ -75,7 +78,7 @@
         <div id="monster-aura-slot" class="shrink-0"></div>
         <div class="flex-1">
           <div class="flex items-center justify-between text-sm mb-1">
-            <span><span id="monster-tier-badge" class="tier-badge"></span> <span id="monster-name" class="font-medium"></span></span>
+            <span><span id="monster-tier-badge" class="tier-badge"></span> <span id="monster-name" class="font-medium"></span> <span id="monster-level" class="text-xs text-slate-400"></span></span>
             <span id="monster-hp-text">0 / 0</span>
           </div>
           <div class="progress-track">
@@ -167,7 +170,10 @@
         <div class="flex-1">
           <div class="flex items-center justify-between">
             <span id="pet-active-name" class="font-medium"></span>
-            <span id="pet-active-stage" class="tier-badge"></span>
+            <span class="flex gap-1">
+              <span id="pet-active-stage" class="tier-badge"></span>
+              <span id="pet-active-quality" class="tier-badge"></span>
+            </span>
           </div>
           <div class="text-xs text-slate-400 mt-1">Lv.<span id="pet-active-level"></span></div>
           <div class="progress-track mt-1">
@@ -181,6 +187,40 @@
       <h2 class="font-serif-sc text-lg text-amber-300 mb-3">宠物图鉴</h2>
       <div id="pets-roster" class="space-y-2 text-sm"></div>
       <div id="pets-roster-empty" class="text-slate-500 text-sm hidden">暂无宠物</div>
+    </div>
+  </section>
+
+  <!-- 商店 -->
+  <section id="shop-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-serif-sc text-lg text-amber-300">商店</h2>
+        <button id="shop-refresh-btn" class="btn-secondary text-xs px-3 py-1.5">刷新商店</button>
+      </div>
+      <div id="shop-stock" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm"></div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">出售物品</h2>
+      <div id="shop-sell-list" class="space-y-2 text-sm"></div>
+      <div id="shop-sell-empty" class="text-slate-500 text-sm hidden">暂无可出售的物品</div>
+    </div>
+  </section>
+
+  <!-- 炼丹 -->
+  <section id="alchemy-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">炼丹配方</h2>
+      <div id="alchemy-recipes" class="space-y-2 text-sm"></div>
+    </div>
+  </section>
+
+  <!-- 秘境（精英关卡） -->
+  <section id="elite-screen" class="screen space-y-4" style="display:none">
+    <div class="panel panel-ornate text-center">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-2">精英秘境</h2>
+      <p class="text-sm text-slate-400 mb-1">挑战强化妖兽，通关必得法宝。</p>
+      <p id="elite-cost-text" class="text-xs text-slate-500 mb-4"></p>
+      <button id="elite-challenge-btn" class="btn-primary w-full">挑战</button>
     </div>
   </section>
 

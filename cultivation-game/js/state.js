@@ -16,13 +16,15 @@ CULT.State = {
         hp: null, // filled in by combat.recomputeStats on first load
         hpMax: null,
         restTicksRemaining: 0,
+        alchemyBonuses: { hp: 0, atk: 0, def: 0, spd: 0 },
       },
-      equipped: { weapon: null, armor: null, accessory: null },
+      equipped: { weapon: null, armor: null, accessory: null, boots: null, gloves: null },
       equippedFabao: { attack: null, defense: null, boost: null },
       inventory: {}, // itemId -> count (covers equipment, fabao, consumables, materials)
       techniques: { learned: ['tech_basic_qi'] }, // 所有已修习功法同时叠加生效
-      pets: { owned: [], activeId: null }, // owned: [{ instanceId, speciesId, level, exp }]
-      combat: { currentMonsterId: null, currentMonsterHp: null, log: [] },
+      pets: { owned: [], activeId: null }, // owned: [{ instanceId, speciesId, level, exp, quality }]
+      combat: { currentMonsterId: null, currentMonsterHp: null, log: [], isEliteChallenge: false },
+      shop: { stock: [], refreshCost: 2, lastRefreshDate: '' },
       settings: { autoBreakthrough: false },
       stats: { totalBattlesWon: 0, totalBreakthroughs: 0, totalBreakthroughFails: 0 },
       pendingBreakthroughBonus: 0, // consumed by next breakthrough attempt

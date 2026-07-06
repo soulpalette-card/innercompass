@@ -15,6 +15,12 @@ CULT.Combat = {
       flatSpd += item.bonuses.spd || 0;
     }
 
+    const alchemyBonuses = state.character.alchemyBonuses || {};
+    flatHp += alchemyBonuses.hp || 0;
+    flatAtk += alchemyBonuses.atk || 0;
+    flatDef += alchemyBonuses.def || 0;
+    flatSpd += alchemyBonuses.spd || 0;
+
     let hpMult = 0, atkMult = 0, defMult = 0, spdMult = 0, cultivationSpeedMult = 0;
     for (const techId of state.techniques.learned) {
       const tech = CULT.Data.getTechnique(techId);
@@ -40,7 +46,8 @@ CULT.Combat = {
     const activePet = state.pets.owned.find((p) => p.instanceId === state.pets.activeId);
     if (activePet) {
       const stage = CULT.Data.getPetStage(activePet.level);
-      const petBonus = stage.bonusMult + (activePet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel;
+      const quality = CULT.Data.getPetQuality(activePet.quality); // 旧存档没有 quality 字段时会兜底为"普通"
+      const petBonus = (stage.bonusMult + (activePet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel) * quality.statMult;
       hpMult += petBonus;
       atkMult += petBonus;
       defMult += petBonus;
@@ -56,6 +63,30 @@ CULT.Combat = {
     };
   },
 
+  // 对比某件未装备的装备 vs 当前槽位已装备的物品，返回每个属性的增减值
+  getEquipmentDelta(state, itemId) {
+    const item = CULT.Data.getEquipment(itemId);
+    const currentId = state.equipped[item.slot];
+    const current = currentId ? CULT.Data.getEquipment(currentId) : null;
+    const delta = {};
+    for (const stat of ['hp', 'atk', 'def', 'spd']) {
+      delta[stat] = (item.bonuses[stat] || 0) - (current ? current.bonuses[stat] || 0 : 0);
+    }
+    return delta;
+  },
+
+  // 同上，针对法宝（百分比加成）
+  getFabaoDelta(state, fabaoId) {
+    const fabao = CULT.Data.getFabao(fabaoId);
+    const currentId = state.equippedFabao[fabao.category];
+    const current = currentId ? CULT.Data.getFabao(currentId) : null;
+    const delta = {};
+    for (const stat of ['hpMult', 'atkMult', 'defMult', 'spdMult']) {
+      delta[stat] = (fabao.bonuses[stat] || 0) - (current ? current.bonuses[stat] || 0 : 0);
+    }
+    return delta;
+  },
+
   getCultivationPerSecond(state, stats) {
     const realmGrowth = Math.pow(
       CULT.TUNING.cultivationPerSecondRealmGrowth,
@@ -66,9 +97,10 @@ CULT.Combat = {
   },
 
   // 根据玩家当前境界基础属性 + 怪物倍率 + 难度系数，生成一只怪物的战斗属性快照
-  instantiateMonster(monsterDef, state) {
+  // extraMult 可选，供精英关卡等场景在原有难度系数上再乘一个强化倍率
+  instantiateMonster(monsterDef, state, extraMult) {
     const playerBase = CULT.Data.getBaseStats(state.character.realmId, state.character.subLevel);
-    const tierMult = CULT.TUNING.monsterDifficultyByTier[monsterDef.tier] || 1;
+    const tierMult = (CULT.TUNING.monsterDifficultyByTier[monsterDef.tier] || 1) * (extraMult || 1);
     return {
       id: monsterDef.id,
       name: monsterDef.name,
@@ -128,9 +160,11 @@ CULT.Combat = {
     }
   },
 
-  capturePet(state, speciesId) {
+  capturePet(state, speciesId, sourceMonsterLevel) {
     const instanceId = `${speciesId}_${CULT.utils.now()}_${Math.floor(Math.random() * 10000)}`;
-    const instance = { instanceId, speciesId, level: 1, exp: 0 };
+    const level = Math.max(1, Math.floor((sourceMonsterLevel || 1) * 0.5));
+    const quality = CULT.Data.rollPetQuality().id;
+    const instance = { instanceId, speciesId, level, exp: 0, quality };
     state.pets.owned.push(instance);
     if (!state.pets.activeId) state.pets.activeId = instanceId;
     return instance;
@@ -243,10 +277,16 @@ CULT.Combat = {
       for (const eqId of loot.equipment) {
         state.inventory[eqId] = (state.inventory[eqId] || 0) + 1;
       }
+      if (state.combat.isEliteChallenge) {
+        const bonusFabao = CULT.Data.rollWeightedFabao();
+        loot.fabao.push(bonusFabao.id);
+        state.combat.isEliteChallenge = false;
+      }
       for (const fbId of loot.fabao) {
         state.inventory[fbId] = (state.inventory[fbId] || 0) + 1;
       }
-      const capturedPets = loot.pets.map((speciesId) => CULT.Combat.capturePet(state, speciesId));
+      const monsterLevel = CULT.Data.getMonsterLevel(state, monsterDef.tier);
+      const capturedPets = loot.pets.map((speciesId) => CULT.Combat.capturePet(state, speciesId, monsterLevel));
       state.stats.totalBattlesWon += 1;
       CULT.Combat.awardPetExp(state, CULT.TUNING.petExpPerVictory);
 
@@ -262,6 +302,7 @@ CULT.Combat = {
       character.restTicksRemaining = CULT.TUNING.restTicksAfterDefeat;
       state.combat.currentMonsterId = null;
       state.combat.currentMonsterHp = null;
+      state.combat.isEliteChallenge = false; // 挑战失败：灵石已消耗，不补发，清掉标记避免遗留
 
       event.type = 'defeat';
     }
