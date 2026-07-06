@@ -178,6 +178,37 @@ body {
   color: #94a3b8;
 }
 
+.tooltip {
+  position: relative;
+  cursor: help;
+  border-bottom: 1px dotted rgba(148, 163, 184, 0.5);
+}
+.tooltip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #10162b;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #e2e8f0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.4rem;
+  white-space: normal;
+  width: max-content;
+  max-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 60;
+}
+.tooltip:hover::after {
+  opacity: 1;
+}
+
 .tier-badge {
   font-size: 0.7rem;
   padding: 0.05rem 0.4rem;

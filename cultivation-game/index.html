@@ -71,6 +71,20 @@
     </div>
 
     <div class="panel">
+      <div class="grid grid-cols-4 gap-2 text-center text-xs">
+        <div><div id="main-stat-label-hp" class="text-slate-500">气血</div><div id="main-stat-hp" class="mt-0.5 font-medium"></div></div>
+        <div><div id="main-stat-label-atk" class="text-slate-500">攻击</div><div id="main-stat-atk" class="mt-0.5 font-medium"></div></div>
+        <div><div id="main-stat-label-def" class="text-slate-500">防御</div><div id="main-stat-def" class="mt-0.5 font-medium"></div></div>
+        <div><div id="main-stat-label-spd" class="text-slate-500">速度</div><div id="main-stat-spd" class="mt-0.5 font-medium"></div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="text-xs text-slate-500 mb-2">出战宠物</div>
+      <div id="main-pet-chips" class="flex gap-2 text-xs"></div>
+    </div>
+
+    <div class="panel">
       <div id="monster-idle" class="text-slate-400 text-sm flex items-center gap-2">
         <span class="idle-pulse">◌</span> 正在寻找妖兽的踪迹...
       </div>
@@ -100,10 +114,10 @@
     <div class="panel">
       <h2 class="font-serif-sc text-lg text-amber-300 mb-3">属性</h2>
       <div class="grid grid-cols-2 gap-3 text-sm">
-        <div class="stat-row"><span>气血上限</span><span id="stat-hp"></span></div>
-        <div class="stat-row"><span>攻击</span><span id="stat-atk"></span></div>
-        <div class="stat-row"><span>防御</span><span id="stat-def"></span></div>
-        <div class="stat-row"><span>速度</span><span id="stat-spd"></span></div>
+        <div class="stat-row"><span id="stat-label-hp">气血上限</span><span id="stat-hp"></span></div>
+        <div class="stat-row"><span id="stat-label-atk">攻击</span><span id="stat-atk"></span></div>
+        <div class="stat-row"><span id="stat-label-def">防御</span><span id="stat-def"></span></div>
+        <div class="stat-row"><span id="stat-label-spd">速度</span><span id="stat-spd"></span></div>
       </div>
     </div>
     <div class="panel">
@@ -210,6 +224,7 @@
     <div class="panel panel-ornate text-center">
       <h2 class="font-serif-sc text-lg text-amber-300 mb-2">精英秘境</h2>
       <p class="text-sm text-slate-400 mb-1">挑战强化妖兽，通关必得法宝。</p>
+      <p class="text-xs text-slate-600 mb-1">如当前有战斗进行中，将自动暂停并在挑战结束后继续。</p>
       <p id="elite-cost-text" class="text-xs text-slate-500 mb-4"></p>
       <button id="elite-challenge-btn" class="btn-primary w-full">挑战</button>
     </div>

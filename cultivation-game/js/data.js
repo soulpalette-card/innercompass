@@ -195,6 +195,15 @@ CULT.TECHNIQUES = [
   { id: 'tech_sword_heart', name: '一念剑心诀', desc: '攻击 +20%。', cost: 600, bonuses: { atkMult: 0.20 } },
 ];
 
+// 属性说明文字，供悬浮提示使用
+CULT.STAT_DESCRIPTIONS = {
+  hp: '气血上限：降到0会被打败，需要闭关疗养才能恢复。',
+  atk: '攻击：每回合对怪物造成的伤害，越高越快击杀怪物。',
+  def: '防御：抵消怪物对你的伤害，越高受到的伤害越低。',
+  spd: '速度：影响装备加成，目前主要作为综合战力参考。',
+  cultivationSpeedMult: '修炼速度：影响每秒获得修为的数量，越高突破越快。',
+};
+
 CULT.Data = {
   getRealm(realmId) {
     return CULT.REALMS[realmId];

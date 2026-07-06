@@ -44,6 +44,20 @@ CULT.UI = {
         sel.targetId = null;
       }
     });
+
+    CULT.UI.applyStatTooltips();
+  },
+
+  // 静态属性标签（角色页 + 主界面）只需要在启动时贴一次悬浮提示，不必每次 refresh 都重来
+  applyStatTooltips() {
+    for (const [stat, desc] of Object.entries(CULT.STAT_DESCRIPTIONS)) {
+      for (const prefix of ['stat-label-', 'main-stat-label-']) {
+        const el = CULT.UI.el(`${prefix}${stat}`);
+        if (!el) continue;
+        el.classList.add('tooltip');
+        el.dataset.tip = desc;
+      }
+    }
   },
 
   showScreen(screenId) {
@@ -93,6 +107,11 @@ CULT.UI = {
     const stats = CULT.Combat.computeStats(state);
     const rate = CULT.Combat.getCultivationPerSecond(state, stats);
     CULT.UI.el('cultivation-rate').textContent = `+${CULT.utils.formatNumber(rate)}/秒`;
+
+    CULT.UI.el('main-stat-hp').textContent = CULT.utils.formatNumber(stats.hp);
+    CULT.UI.el('main-stat-atk').textContent = CULT.utils.formatNumber(stats.atk);
+    CULT.UI.el('main-stat-def').textContent = CULT.utils.formatNumber(stats.def);
+    CULT.UI.el('main-stat-spd').textContent = CULT.utils.formatNumber(stats.spd);
 
     const btn = CULT.UI.el('breakthrough-btn');
     if (info.isMaxRealm) {
@@ -151,6 +170,29 @@ CULT.UI = {
       .map((entry) => `<div class="${entry.cls || ''}">${entry.text}</div>`)
       .join('');
     logEl.scrollTop = logEl.scrollHeight;
+
+    CULT.UI.renderMainPetChips(state);
+  },
+
+  // 主界面的紧凑宠物展示：只显示头像+名字+等级，不像宠物页那样带经验条
+  renderMainPetChips(state) {
+    const container = CULT.UI.el('main-pet-chips');
+    const activeIds = state.pets.activeIds || [];
+    if (activeIds.length === 0) {
+      container.innerHTML = `<span class="text-slate-600">暂无出战宠物</span>`;
+      return;
+    }
+    container.innerHTML = activeIds
+      .map((id) => state.pets.owned.find((p) => p.instanceId === id))
+      .filter(Boolean)
+      .map((pet) => {
+        const { species, stage } = CULT.UI.renderPetCard(pet);
+        return `<div ${CULT.UI.tooltipAttr(CULT.UI.petTooltipText(pet), 'flex items-center gap-1.5 panel !p-1.5')}>
+          <span style="font-size:1.2rem">${species ? species.emoji : '?'}</span>
+          <span>${species ? species.name : pet.speciesId} Lv.${pet.level}</span>
+        </div>`;
+      })
+      .join('');
   },
 
   renderCharacter(state) {
@@ -176,7 +218,7 @@ CULT.UI = {
         return `<div class="flex items-center gap-3 text-sm">
           <div class="item-icon rarity-${item.rarity}">${CULT.Icons.slot(slot)}</div>
           <div class="flex-1">
-            <div>${label}：${item.name}</div>
+            <div>${label}：<span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(itemId))}>${item.name}</span></div>
             <div class="text-xs text-slate-400">${CULT.UI.equipmentBonusText(item)}</div>
           </div>
           <button class="btn-secondary text-xs px-2 py-1" data-unequip-slot="${slot}">卸下</button>
@@ -216,7 +258,7 @@ CULT.UI = {
           <div class="item-icon rarity-${item.rarity}">${CULT.Icons.slot(item.slot)}</div>
           <div class="flex-1">
             <div class="flex items-center justify-between">
-              <span class="font-medium">${item.name} ${count > 1 ? `x${count}` : ''}</span>
+              <span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(id), 'font-medium')}>${item.name} ${count > 1 ? `x${count}` : ''}</span>
               <button class="btn-secondary text-xs px-2 py-1" data-equip="${id}">装备</button>
             </div>
             <div class="text-xs text-slate-400 mt-1">${bonusText}</div>
@@ -237,7 +279,7 @@ CULT.UI = {
         return `<div class="flex items-center gap-3 panel">
           <div class="item-icon">${CULT.Icons.pill(item.type)}</div>
           <div class="flex-1">
-            <div class="font-medium">${item.name} x${count}</div>
+            <div ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(id), 'font-medium')}>${item.name} x${count}</div>
             <div class="text-xs text-slate-400">${item.desc}</div>
           </div>
           <button class="btn-secondary text-xs px-2 py-1" data-use="${id}">使用</button>
@@ -251,7 +293,7 @@ CULT.UI = {
     const matContainer = CULT.UI.el('inventory-materials');
     CULT.UI.el('inventory-materials-empty').classList.toggle('hidden', materialEntries.length > 0);
     matContainer.innerHTML = materialEntries
-      .map(([id, count]) => `<div class="stat-row"><span>${CULT.UI.materialLabel(id)}</span><span>x${count}</span></div>`)
+      .map(([id, count]) => `<div class="stat-row"><span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(id))}>${CULT.UI.materialLabel(id)}</span><span>x${count}</span></div>`)
       .join('');
   },
 
@@ -262,6 +304,39 @@ CULT.UI = {
 
   STAT_LABELS: { hp: '气血', atk: '攻击', def: '防御', spd: '速度' },
   MULT_STAT_LABELS: { hpMult: '气血', atkMult: '攻击', defMult: '防御', spdMult: '速度' },
+  RARITY_LABELS: { common: '普通', uncommon: '优良', rare: '精良', epic: '极品' },
+
+  // 生成悬浮提示所需的 class + data-tip 属性片段，可直接拼进模板字符串。
+  // extraClass 用于跟元素本来就要有的其他 class 合并成一个 class 属性（HTML 不允许重复的 class= 属性）
+  tooltipAttr(text, extraClass) {
+    const cls = extraClass ? `tooltip ${extraClass}` : 'tooltip';
+    return `class="${cls}" data-tip="${CULT.utils.escapeHtml(text)}"`;
+  },
+
+  // 根据 id 前缀生成一段物品说明文字，供悬浮提示使用
+  itemTooltipText(itemId) {
+    if (itemId.startsWith('eq_')) {
+      const item = CULT.Data.getEquipment(itemId);
+      return `${item.name}（${CULT.UI.RARITY_LABELS[item.rarity] || item.rarity}）：${CULT.UI.equipmentBonusText(item)}`;
+    }
+    if (itemId.startsWith('fabao_')) {
+      const fabao = CULT.Data.getFabao(itemId);
+      return `${fabao.name}（${CULT.UI.RARITY_LABELS[fabao.rarity] || fabao.rarity}）：${CULT.UI.fabaoBonusText(fabao)}`;
+    }
+    if (itemId.startsWith('pill_')) {
+      const item = CULT.Data.getConsumable(itemId);
+      return `${item.name}：${item.desc}`;
+    }
+    const material = CULT.Data.getMaterial(itemId);
+    return material ? `${material.name}：炼丹材料（${CULT.UI.RARITY_LABELS[material.rarity] || material.rarity}）` : itemId;
+  },
+
+  petTooltipText(pet) {
+    const stage = CULT.Data.getPetStage(pet.level);
+    const quality = CULT.Data.getPetQuality(pet.quality);
+    const bonus = (stage.bonusMult + (pet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel) * quality.statMult;
+    return `${stage.name}·${quality.name} Lv.${pet.level}：气血/防御/速度 +${Math.round(bonus * 100)}%`;
+  },
 
   equipmentBonusText(item) {
     return Object.entries(item.bonuses)
@@ -327,7 +402,7 @@ CULT.UI = {
         return `<div class="flex items-center gap-3 text-sm">
           <div class="item-icon rarity-${fabao.rarity}">${CULT.Icons.category(cat)}</div>
           <div class="flex-1">
-            <div>${label}类：${fabao.name}</div>
+            <div>${label}类：<span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(fabaoId))}>${fabao.name}</span></div>
             <div class="text-xs text-slate-400">${CULT.UI.fabaoBonusText(fabao)}</div>
           </div>
           <button class="btn-secondary text-xs px-2 py-1" data-unequip-fabao="${cat}">卸下</button>
@@ -350,7 +425,7 @@ CULT.UI = {
           <div class="item-icon rarity-${fabao.rarity}">${CULT.Icons.category(fabao.category)}</div>
           <div class="flex-1">
             <div class="flex items-center justify-between">
-              <span class="font-medium">${fabao.name} ${count > 1 ? `x${count}` : ''}</span>
+              <span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(id), 'font-medium')}>${fabao.name} ${count > 1 ? `x${count}` : ''}</span>
               <button class="btn-secondary text-xs px-2 py-1" data-equip-fabao="${id}">装备</button>
             </div>
             <div class="text-xs text-slate-400 mt-1">${bonusText}</div>
@@ -393,7 +468,7 @@ CULT.UI = {
           <div class="shrink-0">${CULT.Icons.petAura(stage.id, species ? species.emoji : '?')}</div>
           <div class="flex-1">
             <div class="flex items-center justify-between">
-              <span class="font-medium">${species ? species.name : pet.speciesId}</span>
+              <span ${CULT.UI.tooltipAttr(CULT.UI.petTooltipText(pet), 'font-medium')}>${species ? species.name : pet.speciesId}</span>
               <span class="flex gap-1">
                 <span class="tier-badge">${stage.name}</span>
                 <span class="tier-badge ${quality.id}">${quality.name}</span>
@@ -433,7 +508,7 @@ CULT.UI = {
         return `<div class="panel space-y-1.5">
           <div class="flex items-center justify-between">
             <div>
-              <span class="font-medium">${species ? species.name : pet.speciesId}</span>
+              <span ${CULT.UI.tooltipAttr(CULT.UI.petTooltipText(pet), 'font-medium')}>${species ? species.name : pet.speciesId}</span>
               <span class="tier-badge">${stage.name}</span>
               <span class="tier-badge ${quality.id}">${quality.name}</span>
               <span class="text-xs text-slate-400">Lv.${pet.level}</span>
@@ -500,6 +575,15 @@ CULT.UI = {
     return CULT.UI.materialLabel(itemId);
   },
 
+  // 装备/法宝/材料都带稀有度，丹药目前没有稀有度概念，返回 null 时不加任何品阶样式
+  shopItemRarity(itemId) {
+    if (itemId.startsWith('eq_')) return CULT.Data.getEquipment(itemId).rarity;
+    if (itemId.startsWith('fabao_')) return CULT.Data.getFabao(itemId).rarity;
+    if (itemId.startsWith('pill_')) return null;
+    const material = CULT.Data.getMaterial(itemId);
+    return material ? material.rarity : null;
+  },
+
   renderShop(state) {
     CULT.UI.el('shop-refresh-btn').textContent = `刷新商店 (${state.shop.refreshCost} 灵石)`;
 
@@ -508,10 +592,11 @@ CULT.UI = {
       .map((entry) => {
         const price = CULT.Data.getShopBuyPrice(entry.itemId);
         const canAfford = state.character.spiritStones >= price && entry.qty > 0;
-        return `<div class="panel flex gap-3 items-center">
-          <div class="item-icon">${CULT.UI.shopItemIcon(entry.itemId)}</div>
+        const rarity = CULT.UI.shopItemRarity(entry.itemId);
+        return `<div class="panel ${rarity ? `rarity-${rarity} border` : ''} flex gap-3 items-center">
+          <div class="item-icon ${rarity ? `rarity-${rarity}` : ''}">${CULT.UI.shopItemIcon(entry.itemId)}</div>
           <div class="flex-1">
-            <div class="font-medium">${CULT.UI.shopItemName(entry.itemId)}</div>
+            <div ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(entry.itemId), 'font-medium')}>${CULT.UI.shopItemName(entry.itemId)}</div>
             <div class="text-xs text-slate-400">剩余 ${entry.qty} · ${price} 灵石</div>
           </div>
           <button class="btn-secondary text-xs px-2 py-1" data-buy="${entry.itemId}" ${canAfford ? '' : 'disabled'}>购买</button>
@@ -530,9 +615,10 @@ CULT.UI = {
     sellContainer.innerHTML = sellable
       .map(([id, count]) => {
         const price = CULT.Data.getShopSellPrice(id);
-        return `<div class="flex items-center justify-between panel">
+        const rarity = CULT.UI.shopItemRarity(id);
+        return `<div class="flex items-center justify-between panel ${rarity ? `rarity-${rarity} border` : ''}">
           <div>
-            <div class="font-medium">${CULT.UI.shopItemName(id)} x${count}</div>
+            <div ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(id), 'font-medium')}>${CULT.UI.shopItemName(id)} x${count}</div>
             <div class="text-xs text-slate-400">出售单价 ${price} 灵石</div>
           </div>
           <button class="btn-secondary text-xs px-2 py-1" data-sell="${id}">出售</button>
@@ -560,32 +646,49 @@ CULT.UI = {
         <div class="item-icon">${CULT.Icons.pill(result.type)}</div>
         <div class="flex-1">
           <div class="flex items-center justify-between">
-            <span class="font-medium">${recipe.name} → ${result.name}</span>
-            <button class="btn-secondary text-xs px-2 py-1" data-craft="${recipe.id}" ${canCraft ? '' : 'disabled'}>炼制</button>
+            <span class="font-medium">${recipe.name} → <span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(recipe.resultId))}>${result.name}</span></span>
+            <div class="flex gap-1.5">
+              <button class="btn-secondary text-xs px-2 py-1" data-craft="${recipe.id}" ${canCraft ? '' : 'disabled'}>炼制</button>
+              <button class="btn-secondary text-xs px-2 py-1" data-craft-x10="${recipe.id}" ${canCraft ? '' : 'disabled'}>x10</button>
+            </div>
           </div>
           <div class="text-xs mt-1">${materialsText}</div>
         </div>
       </div>`;
     }).join('');
+    const handleCraft = (recipeId, times) => {
+      const recipe = CULT.Data.getRecipe(recipeId);
+      const result = CULT.Game.craftPotion(recipeId, times);
+      if (result) {
+        const consumable = CULT.Data.getConsumable(recipe.resultId);
+        const label = result.crafted > 1 ? `${consumable.name} x${result.crafted}` : consumable.name;
+        CULT.UI.lootQueue.push({ name: label, iconHtml: CULT.Icons.pill(consumable.type), label: '炼丹成功' });
+        CULT.UI.maybeShowNextLoot();
+      }
+    };
     container.querySelectorAll('[data-craft]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const recipe = CULT.Data.getRecipe(btn.dataset.craft);
-        if (CULT.Game.craftPotion(recipe.id)) {
-          const result = CULT.Data.getConsumable(recipe.resultId);
-          CULT.UI.lootQueue.push({ name: result.name, iconHtml: CULT.Icons.pill(result.type), label: '炼丹成功' });
-          CULT.UI.maybeShowNextLoot();
-        }
-      });
+      btn.addEventListener('click', () => handleCraft(btn.dataset.craft, 1));
+    });
+    container.querySelectorAll('[data-craft-x10]').forEach((btn) => {
+      btn.addEventListener('click', () => handleCraft(btn.dataset.craftX10, 10));
     });
   },
 
   renderElite(state) {
     const cost = CULT.Data.getEliteChallengeCost(state.character.realmId);
     CULT.UI.el('elite-cost-text').textContent = `挑战花费：${cost} 灵石`;
-    const busy = !!state.combat.currentMonsterId || state.character.restTicksRemaining > 0;
+    const resting = state.character.restTicksRemaining > 0;
     const btn = CULT.UI.el('elite-challenge-btn');
-    btn.disabled = busy || state.character.spiritStones < cost;
-    btn.textContent = busy ? '当前有战斗进行中' : `挑战 (${cost} 灵石)`;
+    if (state.combat.isEliteChallenge) {
+      btn.disabled = true;
+      btn.textContent = '秘境挑战进行中';
+    } else if (resting) {
+      btn.disabled = true;
+      btn.textContent = '闭关中，无法出战';
+    } else {
+      btn.disabled = state.character.spiritStones < cost;
+      btn.textContent = `挑战 (${cost} 灵石)`;
+    }
   },
 
   appendLog(state, text, cls) {

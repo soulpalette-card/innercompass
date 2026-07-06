@@ -264,6 +264,18 @@ CULT.Combat = {
     return { attempted: true, success, info };
   },
 
+  // 结束当前遭遇战：如果之前有一场被精英挑战暂停的普通战斗，原样恢复它（同样的怪物/血量），
+  // 否则清空当前怪物，让下一次 tick 重新遇怪
+  endEncounter(state) {
+    if (state.combat.pausedMonster) {
+      Object.assign(state.combat, state.combat.pausedMonster);
+      state.combat.pausedMonster = null;
+    } else {
+      state.combat.currentMonsterId = null;
+      state.combat.currentMonsterHp = null;
+    }
+  },
+
   // 每个 tick 推进一次战斗（一回合），返回本回合发生的事件供 UI 生成日志/弹窗
   tick(state, stats) {
     const character = state.character;
@@ -338,14 +350,12 @@ CULT.Combat = {
       event.loot = loot;
       event.capturedPets = capturedPets;
 
-      state.combat.currentMonsterId = null;
-      state.combat.currentMonsterHp = null;
+      CULT.Combat.endEncounter(state);
     } else if (character.hp <= 0) {
       character.hp = 0;
       character.restTicksRemaining = CULT.TUNING.restTicksAfterDefeat;
-      state.combat.currentMonsterId = null;
-      state.combat.currentMonsterHp = null;
       state.combat.isEliteChallenge = false; // 挑战失败：灵石已消耗，不补发，清掉标记避免遗留
+      CULT.Combat.endEncounter(state);
 
       event.type = 'defeat';
     }

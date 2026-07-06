@@ -266,28 +266,31 @@ CULT.Game = {
     return true;
   },
 
-  craftPotion(recipeId) {
+  // times: 想炼制的次数（默认1）。材料不够 times 次时，按现有材料能做多少次就做多少次。
+  craftPotion(recipeId, times) {
     const state = CULT.Game.state;
     const recipe = CULT.Data.getRecipe(recipeId);
     if (!recipe) return false;
-    for (const [matId, needed] of Object.entries(recipe.materials)) {
-      if ((state.inventory[matId] || 0) < needed) return false;
-    }
+
+    const affordableCounts = Object.entries(recipe.materials)
+      .map(([matId, needed]) => Math.floor((state.inventory[matId] || 0) / needed));
+    const maxAffordable = Math.min(times || 1, ...affordableCounts);
+    if (maxAffordable <= 0) return false;
 
     for (const [matId, needed] of Object.entries(recipe.materials)) {
-      state.inventory[matId] -= needed;
+      state.inventory[matId] -= needed * maxAffordable;
       if (state.inventory[matId] <= 0) delete state.inventory[matId];
     }
-    state.inventory[recipe.resultId] = (state.inventory[recipe.resultId] || 0) + recipe.resultCount;
+    state.inventory[recipe.resultId] = (state.inventory[recipe.resultId] || 0) + recipe.resultCount * maxAffordable;
 
     CULT.Game.saveNow();
     CULT.UI.refresh(state);
-    return true;
+    return { crafted: maxAffordable };
   },
 
   startEliteChallenge() {
     const state = CULT.Game.state;
-    if (state.combat.currentMonsterId) return false; // 不打断正在进行的战斗
+    if (state.combat.isEliteChallenge) return false; // 已经在挑战中，不能再叠一层
     if (state.character.restTicksRemaining > 0) return false; // 闭关疗养中不能挑战
 
     const cost = CULT.Data.getEliteChallengeCost(state.character.realmId);
@@ -300,6 +303,18 @@ CULT.Game = {
     const instance = CULT.Combat.instantiateMonster(monsterDef, state, CULT.TUNING.eliteChallengeExtraMult);
 
     state.character.spiritStones -= cost;
+    // 如果当前有普通战斗在进行，先把它的状态存起来，挑战结束后自动恢复
+    if (state.combat.currentMonsterId) {
+      state.combat.pausedMonster = {
+        currentMonsterId: state.combat.currentMonsterId,
+        currentMonsterName: state.combat.currentMonsterName,
+        currentMonsterTier: state.combat.currentMonsterTier,
+        currentMonsterHp: state.combat.currentMonsterHp,
+        currentMonsterHpMax: state.combat.currentMonsterHpMax,
+        currentMonsterAtk: state.combat.currentMonsterAtk,
+        currentMonsterDef: state.combat.currentMonsterDef,
+      };
+    }
     state.combat.currentMonsterId = instance.id;
     state.combat.currentMonsterName = instance.name + '（精英挑战）';
     state.combat.currentMonsterTier = instance.tier;

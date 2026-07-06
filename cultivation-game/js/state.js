@@ -23,7 +23,7 @@ CULT.State = {
       inventory: {}, // itemId -> count (covers equipment, fabao, consumables, materials)
       techniques: { learned: ['tech_basic_qi'] }, // 所有已修习功法同时叠加生效
       pets: { owned: [], activeIds: [] }, // owned: [{ instanceId, speciesId, level, exp, quality }]; activeIds: 最多3个出战宠物
-      combat: { currentMonsterId: null, currentMonsterHp: null, log: [], isEliteChallenge: false },
+      combat: { currentMonsterId: null, currentMonsterHp: null, log: [], isEliteChallenge: false, pausedMonster: null },
       shop: { stock: [], refreshCost: 2, lastRefreshDate: '' },
       settings: { autoBreakthrough: false },
       stats: { totalBattlesWon: 0, totalBreakthroughs: 0, totalBreakthroughFails: 0 },
