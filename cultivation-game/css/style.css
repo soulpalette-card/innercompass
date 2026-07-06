@@ -1,0 +1,195 @@
+body {
+  font-family: 'Inter', 'Noto Serif SC', sans-serif;
+}
+.font-serif-sc {
+  font-family: 'Noto Serif SC', serif;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.screen {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.progress-track {
+  width: 100%;
+  height: 0.6rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease-out;
+}
+
+.nav-btn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  color: #94a3b8;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.nav-btn.active {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fcd34d;
+}
+
+.btn-primary {
+  background: linear-gradient(to right, #d97706, #f59e0b);
+  color: #1c1917;
+  font-weight: 600;
+  padding: 0.6rem 1rem;
+  border-radius: 0.6rem;
+  transition: opacity 0.15s;
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-primary:not(:disabled):hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  border-radius: 0.6rem;
+  transition: background 0.15s;
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.btn-danger {
+  background: rgba(220, 38, 38, 0.15);
+  color: #fca5a5;
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+.btn-danger:hover {
+  background: rgba(220, 38, 38, 0.25);
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  color: #cbd5e1;
+}
+.stat-row span:first-child {
+  color: #94a3b8;
+}
+
+.tier-badge {
+  font-size: 0.7rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.3rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+.tier-badge.weak { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+.tier-badge.normal { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.tier-badge.elite { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
+.tier-badge.boss { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
+
+.rarity-common { border-color: rgba(148, 163, 184, 0.4); }
+.rarity-uncommon { border-color: rgba(34, 197, 94, 0.4); }
+.rarity-rare { border-color: rgba(59, 130, 246, 0.4); }
+.rarity-epic { border-color: rgba(168, 85, 247, 0.5); }
+
+.combat-log {
+  max-height: 11rem;
+  overflow-y: auto;
+  color: #94a3b8;
+}
+.combat-log::-webkit-scrollbar {
+  width: 6px;
+}
+.combat-log::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+}
+.combat-log .log-victory { color: #6ee7b7; }
+.combat-log .log-defeat { color: #fca5a5; }
+
+.save-textarea {
+  width: 100%;
+  height: 6rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.modal-overlay.hidden {
+  display: none;
+}
+.modal-box {
+  background: #10162b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 24rem;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.card-container {
+  perspective: 1000px;
+  width: 8rem;
+  height: 10rem;
+}
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+.card-container.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 0.75rem;
+}
+.card-back {
+  transform: rotateY(180deg);
+}
+.card-back.success { background: linear-gradient(to br, #059669, #34d399); color: #052e16; }
+.card-back.fail { background: linear-gradient(to br, #7f1d1d, #dc2626); color: #fee2e2; }
