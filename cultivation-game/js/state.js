@@ -18,8 +18,10 @@ CULT.State = {
         restTicksRemaining: 0,
       },
       equipped: { weapon: null, armor: null, accessory: null },
-      inventory: {}, // itemId -> count (covers both equipment and consumables)
+      equippedFabao: { attack: null, defense: null, boost: null },
+      inventory: {}, // itemId -> count (covers equipment, fabao, consumables, materials)
       techniques: { learned: ['tech_basic_qi'] }, // 所有已修习功法同时叠加生效
+      pets: { owned: [], activeId: null }, // owned: [{ instanceId, speciesId, level, exp }]
       combat: { currentMonsterId: null, currentMonsterHp: null, log: [] },
       settings: { autoBreakthrough: false },
       stats: { totalBattlesWon: 0, totalBreakthroughs: 0, totalBreakthroughFails: 0 },

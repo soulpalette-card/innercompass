@@ -50,6 +50,8 @@ CULT.UI = {
     CULT.UI.renderCharacter(state);
     CULT.UI.renderInventory(state);
     CULT.UI.renderTechniques(state);
+    CULT.UI.renderFabao(state);
+    CULT.UI.renderPets(state);
     CULT.UI.el('auto-breakthrough-toggle').checked = !!state.settings.autoBreakthrough;
   },
 
@@ -177,6 +179,7 @@ CULT.UI = {
       if (count <= 0) continue;
       if (id.startsWith('eq_')) equipmentEntries.push([id, count]);
       else if (id.startsWith('pill_')) consumableEntries.push([id, count]);
+      else if (id.startsWith('fabao_')) continue; // 法宝在专属的"法宝"页面里展示
       else materialEntries.push([id, count]);
     }
 
@@ -265,6 +268,107 @@ CULT.UI = {
     });
   },
 
+  renderFabao(state) {
+    const categoryLabels = { attack: '攻击', defense: '防御', boost: '增幅' };
+    const bonusLabels = { hpMult: '气血', atkMult: '攻击', defMult: '防御', spdMult: '速度' };
+
+    const slotsContainer = CULT.UI.el('fabao-slots');
+    slotsContainer.innerHTML = Object.entries(categoryLabels)
+      .map(([cat, label]) => {
+        const fabaoId = state.equippedFabao[cat];
+        const fabao = fabaoId ? CULT.Data.getFabao(fabaoId) : null;
+        if (!fabao) {
+          return `<div class="flex items-center gap-3 text-sm">
+            <div class="item-icon">${CULT.Icons.category(cat)}</div>
+            <span class="flex-1">${label}类</span>
+            <span class="text-slate-600">未装备</span>
+          </div>`;
+        }
+        return `<div class="flex items-center gap-3 text-sm">
+          <div class="item-icon rarity-${fabao.rarity}">${CULT.Icons.category(cat)}</div>
+          <span class="flex-1">${label}类：${fabao.name}</span>
+          <button class="btn-secondary text-xs px-2 py-1" data-unequip-fabao="${cat}">卸下</button>
+        </div>`;
+      })
+      .join('');
+    slotsContainer.querySelectorAll('[data-unequip-fabao]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.unequipFabao(btn.dataset.unequipFabao));
+    });
+
+    const owned = Object.entries(state.inventory).filter(([id, count]) => count > 0 && id.startsWith('fabao_'));
+    const invContainer = CULT.UI.el('fabao-inventory');
+    CULT.UI.el('fabao-inventory-empty').classList.toggle('hidden', owned.length > 0);
+    invContainer.innerHTML = owned
+      .map(([id, count]) => {
+        const fabao = CULT.Data.getFabao(id);
+        const bonusText = Object.entries(fabao.bonuses)
+          .map(([k, v]) => `${bonusLabels[k] || k}+${Math.round(v * 100)}%`)
+          .join(' ');
+        return `<div class="panel rarity-${fabao.rarity} border flex gap-3 items-center">
+          <div class="item-icon rarity-${fabao.rarity}">${CULT.Icons.category(fabao.category)}</div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span class="font-medium">${fabao.name} ${count > 1 ? `x${count}` : ''}</span>
+              <button class="btn-secondary text-xs px-2 py-1" data-equip-fabao="${id}">装备</button>
+            </div>
+            <div class="text-xs text-slate-400 mt-1">${bonusText}</div>
+          </div>
+        </div>`;
+      })
+      .join('');
+    invContainer.querySelectorAll('[data-equip-fabao]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.equipFabao(btn.dataset.equipFabao));
+    });
+  },
+
+  renderPets(state) {
+    const activePet = state.pets.owned.find((p) => p.instanceId === state.pets.activeId);
+
+    CULT.UI.el('pet-active-empty').classList.toggle('hidden', !!activePet);
+    CULT.UI.el('pet-active-card').classList.toggle('hidden', !activePet);
+    if (activePet) {
+      const species = CULT.Data.getPetSpecies(activePet.speciesId);
+      const stage = CULT.Data.getPetStage(activePet.level);
+      CULT.UI.el('pet-active-name').textContent = species ? species.name : activePet.speciesId;
+      CULT.UI.el('pet-active-stage').textContent = stage.name;
+      CULT.UI.el('pet-active-level').textContent = activePet.level;
+      const threshold = CULT.Data.getPetExpThreshold(activePet.level);
+      const pct = CULT.utils.clamp((activePet.exp / threshold) * 100, 0, 100);
+      CULT.UI.el('pet-active-exp-bar').style.width = `${pct}%`;
+      CULT.UI.el('pet-active-exp-text').textContent = `${Math.floor(activePet.exp)} / ${threshold}`;
+
+      if (CULT.UI.renderedActivePetId !== activePet.instanceId) {
+        CULT.UI.el('pet-active-aura').innerHTML = CULT.Icons.petAura(stage.id, species ? species.emoji : '?');
+        CULT.UI.renderedActivePetId = activePet.instanceId;
+      }
+    } else {
+      CULT.UI.renderedActivePetId = null;
+    }
+
+    const rosterContainer = CULT.UI.el('pets-roster');
+    CULT.UI.el('pets-roster-empty').classList.toggle('hidden', state.pets.owned.length > 0);
+    rosterContainer.innerHTML = state.pets.owned
+      .map((pet) => {
+        const species = CULT.Data.getPetSpecies(pet.speciesId);
+        const stage = CULT.Data.getPetStage(pet.level);
+        const isActive = pet.instanceId === state.pets.activeId;
+        const actionHtml = isActive
+          ? `<span class="text-xs text-emerald-400">出战中</span>`
+          : `<button class="btn-secondary text-xs px-2 py-1" data-set-active-pet="${pet.instanceId}">设为出战</button>`;
+        return `<div class="flex items-center justify-between panel">
+          <div>
+            <div class="font-medium">${species ? species.name : pet.speciesId} <span class="tier-badge">${stage.name}</span></div>
+            <div class="text-xs text-slate-400">Lv.${pet.level}</div>
+          </div>
+          ${actionHtml}
+        </div>`;
+      })
+      .join('');
+    rosterContainer.querySelectorAll('[data-set-active-pet]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.setActivePet(btn.dataset.setActivePet));
+    });
+  },
+
   appendLog(state, text, cls) {
     state.combat.log.push({ text, cls: cls || '' });
     if (state.combat.log.length > 30) state.combat.log.shift();
@@ -287,7 +391,17 @@ CULT.UI = {
       for (const eqId of event.loot.equipment) {
         const item = CULT.Data.getEquipment(eqId);
         CULT.UI.appendLog(state, `获得珍稀掉落：${item.name}！`, 'log-victory');
-        CULT.UI.lootQueue.push(item);
+        CULT.UI.lootQueue.push({ name: item.name, iconHtml: CULT.Icons.slot(item.slot), label: '获得珍稀装备' });
+      }
+      for (const fbId of event.loot.fabao) {
+        const fabao = CULT.Data.getFabao(fbId);
+        CULT.UI.appendLog(state, `获得法宝：${fabao.name}！`, 'log-victory');
+        CULT.UI.lootQueue.push({ name: fabao.name, iconHtml: CULT.Icons.category(fabao.category), label: '获得法宝' });
+      }
+      for (const pet of event.capturedPets) {
+        const species = CULT.Data.getPetSpecies(pet.speciesId);
+        CULT.UI.appendLog(state, `捕获了新宠物：${species.name}！`, 'log-victory');
+        CULT.UI.lootQueue.push({ name: species.name, iconHtml: `<span style="font-size:2rem">${species.emoji}</span>`, label: '捕获宠物' });
       }
       CULT.UI.maybeShowNextLoot();
     } else if (event.type === 'defeat') {
@@ -360,9 +474,10 @@ CULT.UI = {
 
   maybeShowNextLoot() {
     if (CULT.UI.lootModalOpen || CULT.UI.lootQueue.length === 0) return;
-    const item = CULT.UI.lootQueue.shift();
-    CULT.UI.el('loot-item-name').textContent = item.name;
-    CULT.UI.el('loot-item-icon').innerHTML = CULT.Icons.slot(item.slot);
+    const entry = CULT.UI.lootQueue.shift();
+    CULT.UI.el('loot-modal-title').textContent = entry.label || '珍稀掉落';
+    CULT.UI.el('loot-item-name').textContent = entry.name;
+    CULT.UI.el('loot-item-icon').innerHTML = entry.iconHtml;
     CULT.UI.el('loot-modal').classList.remove('hidden');
     CULT.UI.lootModalOpen = true;
   },
@@ -378,6 +493,8 @@ CULT.UI = {
     CULT.UI.el('offline-cultivation').textContent = CULT.utils.formatNumber(progress.cultivationGained);
     CULT.UI.el('offline-stones').textContent = CULT.utils.formatNumber(progress.stonesGained);
     CULT.UI.el('offline-kills').textContent = progress.estimatedKills;
+    CULT.UI.el('offline-fabao').textContent = progress.fabaoCount || 0;
+    CULT.UI.el('offline-pets').textContent = progress.petsCaptured || 0;
     CULT.UI.el('offline-breakthroughs').textContent = progress.breakthroughsDuringOffline || 0;
     CULT.UI.el('offline-modal').classList.remove('hidden');
   },

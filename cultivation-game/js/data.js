@@ -36,40 +36,87 @@ CULT.TUNING = {
   offlineCapHours: 8,
   offlineEfficiency: 0.5,
   offlineMinSecondsToShowSummary: 60,
+
+  petExpBaseThreshold: 20, // 宠物升级所需经验曲线，与境界阈值同款公式
+  petExpGrowth: 1.15,
+  petExpPerVictory: 5, // 出战宠物每次战斗胜利获得的经验
+  petBonusPerLevel: 0.003, // 宠物在当前阶段内，每级额外叠加的加成
 };
 
 // 怪物：数值以"相对玩家当前基础属性的倍率"表示，自动随玩家境界缩放
 CULT.MONSTERS = [
   { id: 'slime', name: '灵雾史莱姆', minRealm: 0, tier: 'weak', emoji: '\u{1F4A7}',
     mult: { hp: 0.5, atk: 0.4, def: 0.3 },
-    loot: { expRange: [4, 8], stonesRange: [2, 5], materials: [{ id: 'mat_slime_core', chance: 0.25 }], equipment: [] } },
+    loot: { expRange: [4, 8], stonesRange: [2, 5], materials: [{ id: 'mat_slime_core', chance: 0.25 }], equipment: [],
+      pets: [{ id: 'pet_slime', chance: 0.006 }] } },
   { id: 'wolf', name: '妖狼', minRealm: 0, tier: 'normal', emoji: '\u{1F43A}',
     mult: { hp: 0.8, atk: 0.7, def: 0.55 },
-    loot: { expRange: [8, 16], stonesRange: [5, 12], materials: [{ id: 'mat_wolf_fang', chance: 0.3 }], equipment: [{ id: 'eq_sword_qingfeng', chance: 0.015 }] } },
+    loot: { expRange: [8, 16], stonesRange: [5, 12], materials: [{ id: 'mat_wolf_fang', chance: 0.3 }], equipment: [{ id: 'eq_sword_qingfeng', chance: 0.015 }],
+      fabao: [{ id: 'fabao_atk_leihuo', chance: 0.004 }], pets: [{ id: 'pet_wolf', chance: 0.005 }] } },
   { id: 'boar', name: '铁鬃野猪', minRealm: 0, tier: 'normal', emoji: '\u{1F417}',
     mult: { hp: 1.0, atk: 0.6, def: 0.8 },
-    loot: { expRange: [10, 18], stonesRange: [6, 14], materials: [{ id: 'mat_boar_hide', chance: 0.3 }], equipment: [{ id: 'eq_armor_xuantie', chance: 0.012 }] } },
+    loot: { expRange: [10, 18], stonesRange: [6, 14], materials: [{ id: 'mat_boar_hide', chance: 0.3 }], equipment: [{ id: 'eq_armor_xuantie', chance: 0.012 }],
+      fabao: [{ id: 'fabao_def_xuangui', chance: 0.004 }], pets: [{ id: 'pet_boar', chance: 0.005 }] } },
   { id: 'elite_fox', name: '九尾妖狐', minRealm: 1, tier: 'elite', emoji: '\u{1F98A}',
     mult: { hp: 1.4, atk: 1.2, def: 0.9 },
-    loot: { expRange: [30, 55], stonesRange: [20, 40], materials: [{ id: 'mat_fox_bead', chance: 0.2 }], equipment: [{ id: 'eq_ring_lingxi', chance: 0.02 }] } },
+    loot: { expRange: [30, 55], stonesRange: [20, 40], materials: [{ id: 'mat_fox_bead', chance: 0.2 }], equipment: [{ id: 'eq_ring_lingxi', chance: 0.02 }],
+      fabao: [{ id: 'fabao_atk_poyun', chance: 0.006 }, { id: 'fabao_boost_hunyuan', chance: 0.003 }], pets: [{ id: 'pet_fox', chance: 0.007 }] } },
   { id: 'boss_jindan', name: '金丹魔君', minRealm: 2, tier: 'boss', emoji: '\u{1F479}',
     mult: { hp: 2.2, atk: 1.6, def: 1.2 },
-    loot: { expRange: [200, 350], stonesRange: [150, 260], materials: [{ id: 'mat_demon_core', chance: 0.5 }], equipment: [{ id: 'eq_sword_moyin', chance: 0.05 }] } },
+    loot: { expRange: [200, 350], stonesRange: [150, 260], materials: [{ id: 'mat_demon_core', chance: 0.5 }], equipment: [{ id: 'eq_sword_moyin', chance: 0.05 }],
+      fabao: [{ id: 'fabao_def_wushuang', chance: 0.015 }, { id: 'fabao_boost_hunyuan', chance: 0.01 }] } },
   { id: 'crane', name: '玄羽仙鹤', minRealm: 3, tier: 'normal', emoji: '\u{1F54A}️',
     mult: { hp: 0.9, atk: 0.9, def: 0.7 },
-    loot: { expRange: [80, 140], stonesRange: [60, 110], materials: [{ id: 'mat_crane_feather', chance: 0.25 }], equipment: [] } },
+    loot: { expRange: [80, 140], stonesRange: [60, 110], materials: [{ id: 'mat_crane_feather', chance: 0.25 }], equipment: [],
+      pets: [{ id: 'pet_crane', chance: 0.007 }] } },
   { id: 'elite_python', name: '玄冥蛟蟒', minRealm: 3, tier: 'elite', emoji: '\u{1F40D}',
     mult: { hp: 1.5, atk: 1.3, def: 1.0 },
-    loot: { expRange: [180, 300], stonesRange: [120, 220], materials: [{ id: 'mat_python_scale', chance: 0.2 }], equipment: [{ id: 'eq_armor_xuanming', chance: 0.02 }] } },
+    loot: { expRange: [180, 300], stonesRange: [120, 220], materials: [{ id: 'mat_python_scale', chance: 0.2 }], equipment: [{ id: 'eq_armor_xuanming', chance: 0.02 }],
+      fabao: [{ id: 'fabao_def_wushuang', chance: 0.006 }], pets: [{ id: 'pet_python', chance: 0.007 }] } },
   { id: 'boss_yuanying', name: '元婴期魔尊', minRealm: 3, tier: 'boss', emoji: '\u{1F47A}',
     mult: { hp: 2.5, atk: 1.8, def: 1.3 },
-    loot: { expRange: [900, 1500], stonesRange: [700, 1200], materials: [{ id: 'mat_demon_core', chance: 0.6 }], equipment: [{ id: 'eq_ring_ziyan', chance: 0.05 }] } },
+    loot: { expRange: [900, 1500], stonesRange: [700, 1200], materials: [{ id: 'mat_demon_core', chance: 0.6 }], equipment: [{ id: 'eq_ring_ziyan', chance: 0.05 }],
+      fabao: [{ id: 'fabao_atk_taiyi', chance: 0.015 }, { id: 'fabao_boost_taiji', chance: 0.008 }] } },
   { id: 'phantom', name: '化神虚影', minRealm: 4, tier: 'normal', emoji: '\u{1F47B}',
     mult: { hp: 1.0, atk: 1.0, def: 0.8 },
-    loot: { expRange: [500, 900], stonesRange: [400, 700], materials: [{ id: 'mat_phantom_dust', chance: 0.25 }], equipment: [] } },
+    loot: { expRange: [500, 900], stonesRange: [400, 700], materials: [{ id: 'mat_phantom_dust', chance: 0.25 }], equipment: [],
+      pets: [{ id: 'pet_phantom', chance: 0.007 }] } },
   { id: 'boss_huashen', name: '化神大能', minRealm: 4, tier: 'boss', emoji: '\u{1F47F}',
     mult: { hp: 2.8, atk: 2.0, def: 1.4 },
-    loot: { expRange: [6000, 10000], stonesRange: [5000, 8000], materials: [{ id: 'mat_demon_core', chance: 0.7 }], equipment: [{ id: 'eq_sword_moyin', chance: 0.08 }] } },
+    loot: { expRange: [6000, 10000], stonesRange: [5000, 8000], materials: [{ id: 'mat_demon_core', chance: 0.7 }], equipment: [{ id: 'eq_sword_moyin', chance: 0.08 }],
+      fabao: [{ id: 'fabao_def_pantian', chance: 0.02 }, { id: 'fabao_boost_taiji', chance: 0.015 }] } },
+];
+
+// 法宝：分攻击/防御/增幅三类，加成为百分比（xxxMult），后期数值达到万/亿级别时依然有意义
+CULT.FABAO = [
+  { id: 'fabao_atk_leihuo', name: '雷火令', category: 'attack', rarity: 'common', bonuses: { atkMult: 0.12 } },
+  { id: 'fabao_atk_poyun', name: '破云印', category: 'attack', rarity: 'rare', bonuses: { atkMult: 0.25, spdMult: 0.05 } },
+  { id: 'fabao_atk_taiyi', name: '太乙神雷', category: 'attack', rarity: 'epic', bonuses: { atkMult: 0.45 } },
+  { id: 'fabao_def_xuangui', name: '玄龟盾', category: 'defense', rarity: 'common', bonuses: { defMult: 0.12, hpMult: 0.08 } },
+  { id: 'fabao_def_wushuang', name: '无双铠', category: 'defense', rarity: 'rare', bonuses: { defMult: 0.25, hpMult: 0.15 } },
+  { id: 'fabao_def_pantian', name: '盘天镜', category: 'defense', rarity: 'epic', bonuses: { defMult: 0.4, hpMult: 0.3 } },
+  { id: 'fabao_boost_hunyuan', name: '混元珠', category: 'boost', rarity: 'rare', bonuses: { atkMult: 0.1, defMult: 0.1, hpMult: 0.1, spdMult: 0.1 } },
+  { id: 'fabao_boost_taiji', name: '太极葫芦', category: 'boost', rarity: 'epic', bonuses: { atkMult: 0.18, defMult: 0.18, hpMult: 0.18, spdMult: 0.18 } },
+];
+
+// 宠物阶段：所有宠物共用的通用段位，随等级自动跨阶段
+CULT.PET_STAGES = [
+  { id: 0, name: '妖兽', minLevel: 1, bonusMult: 0.02 },
+  { id: 1, name: '魔兽', minLevel: 10, bonusMult: 0.05 },
+  { id: 2, name: '邪兽', minLevel: 20, bonusMult: 0.10 },
+  { id: 3, name: '圣兽', minLevel: 35, bonusMult: 0.18 },
+  { id: 4, name: '神兽', minLevel: 50, bonusMult: 0.30 },
+];
+
+// 可捕获的宠物种类，来源于对应的怪物（复用其 emoji）
+CULT.PET_SPECIES = [
+  { id: 'pet_slime', name: '灵雾史莱姆宝宝', sourceMonsterId: 'slime', emoji: '\u{1F4A7}' },
+  { id: 'pet_wolf', name: '妖狼幼崽', sourceMonsterId: 'wolf', emoji: '\u{1F43A}' },
+  { id: 'pet_boar', name: '铁鬃小猪', sourceMonsterId: 'boar', emoji: '\u{1F417}' },
+  { id: 'pet_fox', name: '九尾狐仔', sourceMonsterId: 'elite_fox', emoji: '\u{1F98A}' },
+  { id: 'pet_crane', name: '玄羽雏鹤', sourceMonsterId: 'crane', emoji: '\u{1F54A}️' },
+  { id: 'pet_python', name: '玄冥小蟒', sourceMonsterId: 'elite_python', emoji: '\u{1F40D}' },
+  { id: 'pet_phantom', name: '化神小灵', sourceMonsterId: 'phantom', emoji: '\u{1F47B}' },
 ];
 
 // 装备：flat 加成
@@ -153,5 +200,26 @@ CULT.Data = {
     return CULT.MONSTERS.filter(
       (m) => m.minRealm <= realmId && m.minRealm >= realmId - window
     );
+  },
+
+  getFabao(id) {
+    return CULT.FABAO.find((f) => f.id === id);
+  },
+
+  getPetSpecies(id) {
+    return CULT.PET_SPECIES.find((p) => p.id === id);
+  },
+
+  // 按等级从高到低找到第一个满足 minLevel 的阶段（数组本身按等级升序排列）
+  getPetStage(level) {
+    let stage = CULT.PET_STAGES[0];
+    for (const s of CULT.PET_STAGES) {
+      if (level >= s.minLevel) stage = s;
+    }
+    return stage;
+  },
+
+  getPetExpThreshold(level) {
+    return Math.floor(CULT.TUNING.petExpBaseThreshold * Math.pow(CULT.TUNING.petExpGrowth, level - 1));
   },
 };

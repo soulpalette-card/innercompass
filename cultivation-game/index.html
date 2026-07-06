@@ -28,6 +28,8 @@
     <button class="nav-btn" data-screen="character-screen">角色</button>
     <button class="nav-btn" data-screen="inventory-screen">背包</button>
     <button class="nav-btn" data-screen="techniques-screen">功法</button>
+    <button class="nav-btn" data-screen="fabao-screen">法宝</button>
+    <button class="nav-btn" data-screen="pets-screen">宠物</button>
     <button class="nav-btn" data-screen="settings-screen">设置</button>
   </nav>
 </header>
@@ -118,7 +120,7 @@
   <!-- 背包 -->
   <section id="inventory-screen" class="screen space-y-4" style="display:none">
     <div class="panel">
-      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">法宝装备</h2>
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">装备</h2>
       <div id="inventory-equipment" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm"></div>
       <div id="inventory-equipment-empty" class="text-slate-500 text-sm hidden">暂无装备</div>
     </div>
@@ -139,6 +141,46 @@
     <div class="panel">
       <h2 class="font-serif-sc text-lg text-amber-300 mb-3">功法</h2>
       <div id="techniques-list" class="space-y-2 text-sm"></div>
+    </div>
+  </section>
+
+  <!-- 法宝 -->
+  <section id="fabao-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">法宝槽位</h2>
+      <div id="fabao-slots" class="space-y-2"></div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">未装备法宝</h2>
+      <div id="fabao-inventory" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm"></div>
+      <div id="fabao-inventory-empty" class="text-slate-500 text-sm hidden">暂无法宝</div>
+    </div>
+  </section>
+
+  <!-- 宠物 -->
+  <section id="pets-screen" class="screen space-y-4" style="display:none">
+    <div class="panel panel-ornate">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">出战宠物</h2>
+      <div id="pet-active-empty" class="text-slate-500 text-sm hidden">尚未捕获任何宠物，击败妖兽时有几率捕获。</div>
+      <div id="pet-active-card" class="hidden flex gap-3 items-center">
+        <div id="pet-active-aura" class="shrink-0"></div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between">
+            <span id="pet-active-name" class="font-medium"></span>
+            <span id="pet-active-stage" class="tier-badge"></span>
+          </div>
+          <div class="text-xs text-slate-400 mt-1">Lv.<span id="pet-active-level"></span></div>
+          <div class="progress-track mt-1">
+            <div id="pet-active-exp-bar" class="progress-fill bg-gradient-to-r from-purple-500 to-purple-300" style="width:0%"></div>
+          </div>
+          <div class="text-xs text-slate-500 mt-0.5" id="pet-active-exp-text"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">宠物图鉴</h2>
+      <div id="pets-roster" class="space-y-2 text-sm"></div>
+      <div id="pets-roster-empty" class="text-slate-500 text-sm hidden">暂无宠物</div>
     </div>
   </section>
 
@@ -191,7 +233,7 @@
 <!-- 掉落弹窗 -->
 <div id="loot-modal" class="modal-overlay hidden">
   <div class="modal-box text-center">
-    <h3 class="font-serif-sc text-xl text-amber-300 mb-4">珍稀掉落</h3>
+    <h3 id="loot-modal-title" class="font-serif-sc text-xl text-amber-300 mb-4">珍稀掉落</h3>
     <div class="card-container mx-auto flipped">
       <div class="card-inner">
         <div class="card-front"></div>
@@ -214,6 +256,8 @@
       <div class="stat-row"><span>获得修为</span><span id="offline-cultivation"></span></div>
       <div class="stat-row"><span>获得灵石</span><span id="offline-stones"></span></div>
       <div class="stat-row"><span>击败妖兽</span><span id="offline-kills"></span></div>
+      <div class="stat-row"><span>获得法宝</span><span id="offline-fabao"></span></div>
+      <div class="stat-row"><span>捕获宠物</span><span id="offline-pets"></span></div>
       <div class="stat-row"><span>离线突破</span><span id="offline-breakthroughs"></span></div>
     </div>
     <button id="offline-close-btn" class="btn-primary w-full mt-4">收下收益</button>

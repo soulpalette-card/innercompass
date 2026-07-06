@@ -26,6 +26,27 @@ CULT.Combat = {
       cultivationSpeedMult += tech.bonuses.cultivationSpeedMult || 0;
     }
 
+    for (const category of Object.keys(state.equippedFabao)) {
+      const fabaoId = state.equippedFabao[category];
+      if (!fabaoId) continue;
+      const fabao = CULT.Data.getFabao(fabaoId);
+      if (!fabao) continue;
+      hpMult += fabao.bonuses.hpMult || 0;
+      atkMult += fabao.bonuses.atkMult || 0;
+      defMult += fabao.bonuses.defMult || 0;
+      spdMult += fabao.bonuses.spdMult || 0;
+    }
+
+    const activePet = state.pets.owned.find((p) => p.instanceId === state.pets.activeId);
+    if (activePet) {
+      const stage = CULT.Data.getPetStage(activePet.level);
+      const petBonus = stage.bonusMult + (activePet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel;
+      hpMult += petBonus;
+      atkMult += petBonus;
+      defMult += petBonus;
+      spdMult += petBonus;
+    }
+
     return {
       hp: Math.floor((base.hp + flatHp) * (1 + hpMult)),
       atk: Math.floor((base.atk + flatAtk) * (1 + atkMult)),
@@ -76,6 +97,8 @@ CULT.Combat = {
       stones: CULT.utils.randInt(loot.stonesRange[0], loot.stonesRange[1]),
       materials: [],
       equipment: [],
+      fabao: [],
+      pets: [],
     };
     for (const mat of loot.materials || []) {
       if (Math.random() < mat.chance) result.materials.push(mat.id);
@@ -83,7 +106,34 @@ CULT.Combat = {
     for (const eq of loot.equipment || []) {
       if (Math.random() < eq.chance) result.equipment.push(eq.id);
     }
+    for (const fb of loot.fabao || []) {
+      if (Math.random() < fb.chance) result.fabao.push(fb.id);
+    }
+    for (const pet of loot.pets || []) {
+      if (Math.random() < pet.chance) result.pets.push(pet.id);
+    }
     return result;
+  },
+
+  // 出战宠物获得经验，可能连续跨越多个等级（沿用突破的"循环检查阈值"思路）
+  awardPetExp(state, amount) {
+    const pet = state.pets.owned.find((p) => p.instanceId === state.pets.activeId);
+    if (!pet) return;
+    pet.exp += amount;
+    let threshold = CULT.Data.getPetExpThreshold(pet.level);
+    while (pet.exp >= threshold) {
+      pet.exp -= threshold;
+      pet.level += 1;
+      threshold = CULT.Data.getPetExpThreshold(pet.level);
+    }
+  },
+
+  capturePet(state, speciesId) {
+    const instanceId = `${speciesId}_${CULT.utils.now()}_${Math.floor(Math.random() * 10000)}`;
+    const instance = { instanceId, speciesId, level: 1, exp: 0 };
+    state.pets.owned.push(instance);
+    if (!state.pets.activeId) state.pets.activeId = instanceId;
+    return instance;
   },
 
   // 突破所需信息：是否达到阈值、成功率、是跨大境界还是境界内小层
@@ -193,11 +243,17 @@ CULT.Combat = {
       for (const eqId of loot.equipment) {
         state.inventory[eqId] = (state.inventory[eqId] || 0) + 1;
       }
+      for (const fbId of loot.fabao) {
+        state.inventory[fbId] = (state.inventory[fbId] || 0) + 1;
+      }
+      const capturedPets = loot.pets.map((speciesId) => CULT.Combat.capturePet(state, speciesId));
       state.stats.totalBattlesWon += 1;
+      CULT.Combat.awardPetExp(state, CULT.TUNING.petExpPerVictory);
 
       event.type = 'victory';
       event.monsterName = state.combat.currentMonsterName;
       event.loot = loot;
+      event.capturedPets = capturedPets;
 
       state.combat.currentMonsterId = null;
       state.combat.currentMonsterHp = null;

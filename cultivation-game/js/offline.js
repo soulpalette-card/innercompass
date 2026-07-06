@@ -14,6 +14,8 @@ CULT.Offline = {
     let hp = 0, atk = 0, def = 0, expMid = 0, stonesMid = 0;
     const materialChances = {};
     const equipmentChances = {};
+    const fabaoChances = {};
+    const petChances = {};
 
     monsters.forEach((m, i) => {
       const w = weights[i] / totalWeight;
@@ -29,9 +31,15 @@ CULT.Offline = {
       for (const eq of m.loot.equipment || []) {
         equipmentChances[eq.id] = (equipmentChances[eq.id] || 0) + eq.chance * w;
       }
+      for (const fb of m.loot.fabao || []) {
+        fabaoChances[fb.id] = (fabaoChances[fb.id] || 0) + fb.chance * w;
+      }
+      for (const pet of m.loot.pets || []) {
+        petChances[pet.id] = (petChances[pet.id] || 0) + pet.chance * w;
+      }
     });
 
-    return { hp, atk, def, expMid, stonesMid, materialChances, equipmentChances };
+    return { hp, atk, def, expMid, stonesMid, materialChances, equipmentChances, fabaoChances, petChances };
   },
 
   // 期望次数的整数部分直接发放，小数部分按概率再抽一次，避免离线时间越长掉落量越"确定"而失真
@@ -69,6 +77,16 @@ CULT.Offline = {
       const count = CULT.Offline.grantExpectedCount(estimatedKills * chance);
       if (count > 0) equipmentGained[eqId] = count;
     }
+    const fabaoGained = {};
+    for (const [fbId, chance] of Object.entries(avgMonster.fabaoChances)) {
+      const count = CULT.Offline.grantExpectedCount(estimatedKills * chance);
+      if (count > 0) fabaoGained[fbId] = count;
+    }
+    const petsGained = [];
+    for (const [petSpeciesId, chance] of Object.entries(avgMonster.petChances)) {
+      const count = CULT.Offline.grantExpectedCount(estimatedKills * chance);
+      for (let i = 0; i < count; i++) petsGained.push(petSpeciesId);
+    }
 
     const cultivationGained = meditationExp + combatExp;
 
@@ -80,6 +98,8 @@ CULT.Offline = {
       stonesGained,
       materialsGained,
       equipmentGained,
+      fabaoGained,
+      petsGained,
       estimatedKills,
       shouldShow: elapsedMs >= CULT.TUNING.offlineMinSecondsToShowSummary * 1000,
     };
@@ -95,6 +115,19 @@ CULT.Offline = {
     for (const [id, count] of Object.entries(progress.equipmentGained)) {
       state.inventory[id] = (state.inventory[id] || 0) + count;
     }
+    let fabaoCount = 0;
+    for (const [id, count] of Object.entries(progress.fabaoGained)) {
+      state.inventory[id] = (state.inventory[id] || 0) + count;
+      fabaoCount += count;
+    }
+    for (const speciesId of progress.petsGained) {
+      CULT.Combat.capturePet(state, speciesId);
+    }
+    if (progress.estimatedKills > 0) {
+      CULT.Combat.awardPetExp(state, CULT.TUNING.petExpPerVictory * progress.estimatedKills);
+    }
+    progress.fabaoCount = fabaoCount;
+    progress.petsCaptured = progress.petsGained.length;
 
     let breakthroughs = 0;
     if (state.settings.autoBreakthrough) {

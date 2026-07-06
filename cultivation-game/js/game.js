@@ -78,6 +78,48 @@ CULT.Game = {
     return true;
   },
 
+  equipFabao(fabaoId) {
+    const state = CULT.Game.state;
+    const fabao = CULT.Data.getFabao(fabaoId);
+    if (!fabao) return false;
+    if (!state.inventory[fabaoId] || state.inventory[fabaoId] <= 0) return false;
+
+    const previousFabaoId = state.equippedFabao[fabao.category];
+    state.equippedFabao[fabao.category] = fabaoId;
+    state.inventory[fabaoId] -= 1;
+    if (state.inventory[fabaoId] <= 0) delete state.inventory[fabaoId];
+    if (previousFabaoId) {
+      state.inventory[previousFabaoId] = (state.inventory[previousFabaoId] || 0) + 1;
+    }
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
+  unequipFabao(category) {
+    const state = CULT.Game.state;
+    const fabaoId = state.equippedFabao[category];
+    if (!fabaoId) return false;
+    state.equippedFabao[category] = null;
+    state.inventory[fabaoId] = (state.inventory[fabaoId] || 0) + 1;
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
+  setActivePet(instanceId) {
+    const state = CULT.Game.state;
+    const pet = state.pets.owned.find((p) => p.instanceId === instanceId);
+    if (!pet) return false;
+    state.pets.activeId = instanceId;
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
   useConsumable(itemId) {
     const state = CULT.Game.state;
     const item = CULT.Data.getConsumable(itemId);

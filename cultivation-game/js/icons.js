@@ -59,6 +59,19 @@ CULT.Icons = {
     `;
   },
 
+  // 内部共用：画一圈发光旋转的光环，中间放一个 emoji
+  _auraRing(color, emoji, wrapperClass) {
+    return `
+      <div class="monster-aura ${wrapperClass || ''}" style="--aura-color:${color}">
+        <svg viewBox="0 0 100 100" class="aura-ring">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.5"/>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="${color}" stroke-width="1" opacity="0.3" stroke-dasharray="4 5"/>
+        </svg>
+        <span class="monster-emoji">${emoji}</span>
+      </div>
+    `;
+  },
+
   monsterAura(tier, emoji) {
     const ringColors = {
       weak: '#94a3b8',
@@ -67,14 +80,36 @@ CULT.Icons = {
       boss: '#f87171',
     };
     const color = ringColors[tier] || '#94a3b8';
-    return `
-      <div class="monster-aura tier-aura-${tier}" style="--aura-color:${color}">
-        <svg viewBox="0 0 100 100" class="aura-ring">
-          <circle cx="50" cy="50" r="44" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.5"/>
-          <circle cx="50" cy="50" r="38" fill="none" stroke="${color}" stroke-width="1" opacity="0.3" stroke-dasharray="4 5"/>
-        </svg>
-        <span class="monster-emoji">${emoji}</span>
-      </div>
-    `;
+    return CULT.Icons._auraRing(color, emoji, `tier-aura-${tier}`);
+  },
+
+  petAura(stageId, emoji) {
+    const ringColors = {
+      0: '#94a3b8', // 妖兽
+      1: '#60a5fa', // 魔兽
+      2: '#c084fc', // 邪兽
+      3: '#fbbf24', // 圣兽
+      4: '#f87171', // 神兽
+    };
+    const color = ringColors[stageId] != null ? ringColors[stageId] : '#94a3b8';
+    return CULT.Icons._auraRing(color, emoji, `stage-aura-${stageId}`);
+  },
+
+  category(cat, extraClass) {
+    const paths = {
+      attack: `
+        <path d="M13 2L7 13h4l-1 9 7-12h-4z" fill="currentColor"/>
+      `,
+      defense: `
+        <path d="M12 2.5l7 2.6v5.6c0 5-3 8.4-7 10.3-4-1.9-7-5.3-7-10.3V5.1z"
+          fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M12 8v7M8.7 11.5h6.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      `,
+      boost: `
+        <path d="M12 3l3 4h-2v6h-2V7H9z" fill="currentColor"/>
+        <path d="M6 15l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      `,
+    };
+    return `<svg viewBox="0 0 24 24" class="icon-svg ${extraClass || ''}" fill="none">${paths[cat] || ''}</svg>`;
   },
 };
