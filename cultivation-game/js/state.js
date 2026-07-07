@@ -23,8 +23,9 @@ CULT.State = {
       inventory: {}, // itemId -> count (covers equipment, fabao, consumables, materials)
       techniques: { learned: ['tech_basic_qi'] }, // 所有已修习功法同时叠加生效
       pets: { owned: [], activeIds: [] }, // owned: [{ instanceId, speciesId, level, exp, quality }]; activeIds: 最多3个出战宠物
-      combat: { currentMonsterId: null, currentMonsterHp: null, log: [], isEliteChallenge: false, pausedMonster: null },
+      combat: { currentMonsterId: null, currentMonsterHp: null, log: [], isEliteChallenge: false, challengeTier: null, pausedMonster: null },
       shop: { stock: [], refreshCost: 2, lastRefreshDate: '' },
+      selectedMapId: null, // 未选择地图时，掉落倍率按 1 计算（见 CULT.Data.getMapLootMultiplier）
       settings: { autoBreakthrough: false },
       stats: { totalBattlesWon: 0, totalBreakthroughs: 0, totalBreakthroughFails: 0 },
       pendingBreakthroughBonus: 0, // consumed by next breakthrough attempt

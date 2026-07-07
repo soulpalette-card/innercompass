@@ -210,6 +210,18 @@ CULT.Game = {
     CULT.Game.saveNow();
   },
 
+  selectMap(mapId) {
+    const state = CULT.Game.state;
+    const map = CULT.Data.getMap(mapId);
+    if (!map) return false;
+    if (map.realmId > state.character.realmId) return false; // 还没到那个境界，不能选
+
+    state.selectedMapId = mapId;
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
   // 每天第一次进入/tick 到时，重置刷新费用并重新生成商店库存
   ensureShopFresh() {
     const state = CULT.Game.state;
@@ -288,19 +300,21 @@ CULT.Game = {
     return { crafted: maxAffordable };
   },
 
-  startEliteChallenge() {
+  // tier: 'elite'（默认）| 'demonlord'——魔王秘境花费更高、怪物更强、奖励更好
+  startSanctumChallenge(tier) {
+    const sanctumTier = tier === 'demonlord' ? 'demonlord' : 'elite';
     const state = CULT.Game.state;
-    if (state.combat.isEliteChallenge) return false; // 已经在挑战中，不能再叠一层
+    if (state.combat.isEliteChallenge) return false; // 已经在挑战中（无论哪个秘境），不能再叠一层
     if (state.character.restTicksRemaining > 0) return false; // 闭关疗养中不能挑战
 
-    const cost = CULT.Data.getEliteChallengeCost(state.character.realmId);
+    const cost = CULT.Data.getSanctumCost(state.character.realmId, sanctumTier);
     if (state.character.spiritStones < cost) return false;
 
     const bossPool = CULT.MONSTERS.filter((m) => m.tier === 'boss' && m.minRealm <= state.character.realmId);
     const elitePool = CULT.MONSTERS.filter((m) => m.tier === 'elite' && m.minRealm <= state.character.realmId);
     const pool = bossPool.length > 0 ? bossPool : (elitePool.length > 0 ? elitePool : CULT.MONSTERS);
     const monsterDef = CULT.utils.pick(pool);
-    const instance = CULT.Combat.instantiateMonster(monsterDef, state, CULT.TUNING.eliteChallengeExtraMult);
+    const instance = CULT.Combat.instantiateMonster(monsterDef, state, CULT.Data.getSanctumExtraMult(sanctumTier));
 
     state.character.spiritStones -= cost;
     // 如果当前有普通战斗在进行，先把它的状态存起来，挑战结束后自动恢复
@@ -315,14 +329,16 @@ CULT.Game = {
         currentMonsterDef: state.combat.currentMonsterDef,
       };
     }
+    const tierLabel = sanctumTier === 'demonlord' ? '魔王秘境' : '精英秘境';
     state.combat.currentMonsterId = instance.id;
-    state.combat.currentMonsterName = instance.name + '（精英挑战）';
+    state.combat.currentMonsterName = instance.name + `（${tierLabel}）`;
     state.combat.currentMonsterTier = instance.tier;
     state.combat.currentMonsterHp = instance.hp;
     state.combat.currentMonsterHpMax = instance.hp;
     state.combat.currentMonsterAtk = instance.atk;
     state.combat.currentMonsterDef = instance.def;
     state.combat.isEliteChallenge = true;
+    state.combat.challengeTier = sanctumTier;
 
     CULT.Game.saveNow();
     CULT.UI.refresh(state);

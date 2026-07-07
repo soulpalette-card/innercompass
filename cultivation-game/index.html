@@ -32,6 +32,7 @@
     <button class="nav-btn" data-screen="pets-screen">宠物</button>
     <button class="nav-btn" data-screen="shop-screen">商店</button>
     <button class="nav-btn" data-screen="alchemy-screen">炼丹</button>
+    <button class="nav-btn" data-screen="map-screen">地图</button>
     <button class="nav-btn" data-screen="elite-screen">秘境</button>
     <button class="nav-btn" data-screen="settings-screen">设置</button>
   </nav>
@@ -219,14 +220,30 @@
     </div>
   </section>
 
-  <!-- 秘境（精英关卡） -->
+  <!-- 地图 -->
+  <section id="map-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-2">地图选择</h2>
+      <p class="text-xs text-slate-500 mb-3">每个境界解锁2张地图，怪物强度相同，只是掉落侧重不同；可自由切换，之前境界的地图也能回去刷。</p>
+      <div id="map-list" class="space-y-2 text-sm"></div>
+    </div>
+  </section>
+
+  <!-- 秘境（精英/魔王挑战） -->
   <section id="elite-screen" class="screen space-y-4" style="display:none">
     <div class="panel panel-ornate text-center">
       <h2 class="font-serif-sc text-lg text-amber-300 mb-2">精英秘境</h2>
       <p class="text-sm text-slate-400 mb-1">挑战强化妖兽，通关必得法宝。</p>
       <p class="text-xs text-slate-600 mb-1">如当前有战斗进行中，将自动暂停并在挑战结束后继续。</p>
-      <p id="elite-cost-text" class="text-xs text-slate-500 mb-4"></p>
-      <button id="elite-challenge-btn" class="btn-primary w-full">挑战</button>
+      <p id="sanctum-cost-text-elite" class="text-xs text-slate-500 mb-4"></p>
+      <button id="sanctum-challenge-btn-elite" class="btn-primary w-full">挑战</button>
+    </div>
+    <div class="panel panel-ornate text-center">
+      <h2 class="font-serif-sc text-lg text-rose-300 mb-2">魔王秘境</h2>
+      <p class="text-sm text-slate-400 mb-1">挑战比精英秘境更强大的魔王，花费更高，法宝奖励也更丰厚。</p>
+      <p class="text-xs text-slate-600 mb-1">如当前有战斗进行中，将自动暂停并在挑战结束后继续。</p>
+      <p id="sanctum-cost-text-demonlord" class="text-xs text-slate-500 mb-4"></p>
+      <button id="sanctum-challenge-btn-demonlord" class="btn-danger w-full">挑战</button>
     </div>
   </section>
 

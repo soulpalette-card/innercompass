@@ -31,9 +31,11 @@ CULT.UI = {
     CULT.UI.el('reset-save-btn').addEventListener('click', CULT.UI.handleReset);
 
     CULT.UI.el('shop-refresh-btn').addEventListener('click', CULT.Game.refreshShop);
-    CULT.UI.el('elite-challenge-btn').addEventListener('click', () => {
-      if (CULT.Game.startEliteChallenge()) CULT.UI.showScreen('main-screen');
-    });
+    for (const tier of ['elite', 'demonlord']) {
+      CULT.UI.el(`sanctum-challenge-btn-${tier}`).addEventListener('click', () => {
+        if (CULT.Game.startSanctumChallenge(tier)) CULT.UI.showScreen('main-screen');
+      });
+    }
 
     CULT.UI.el('fusion-confirm-btn').addEventListener('click', () => {
       const sel = CULT.UI.fusionSelection;
@@ -79,11 +81,12 @@ CULT.UI = {
     CULT.UI.renderCharacter(state);
     CULT.UI.renderInventory(state);
     CULT.UI.renderTechniques(state);
+    CULT.UI.renderMap(state);
     CULT.UI.renderFabao(state);
     CULT.UI.renderPets(state);
     CULT.UI.renderShop(state);
     CULT.UI.renderAlchemy(state);
-    CULT.UI.renderElite(state);
+    CULT.UI.renderSanctums(state);
     CULT.UI.el('auto-breakthrough-toggle').checked = !!state.settings.autoBreakthrough;
   },
 
@@ -334,8 +337,14 @@ CULT.UI = {
   petTooltipText(pet) {
     const stage = CULT.Data.getPetStage(pet.level);
     const quality = CULT.Data.getPetQuality(pet.quality);
+    const type = CULT.Data.getPetType(pet);
     const bonus = (stage.bonusMult + (pet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel) * quality.statMult;
-    return `${stage.name}·${quality.name} Lv.${pet.level}：气血/防御/速度 +${Math.round(bonus * 100)}%`;
+    const effectText = {
+      land: `气血/防御 +${Math.round(bonus * CULT.TUNING.petLandStatWeight * 100)}%`,
+      flying: `修炼速度 +${Math.round(bonus * CULT.TUNING.petFlyingCultivationWeight * 100)}%`,
+      sea: '出战时每回合额外造成较高伤害',
+    }[type.id];
+    return `${type.name}·${stage.name}·${quality.name} Lv.${pet.level}：${effectText}`;
   },
 
   equipmentBonusText(item) {
@@ -381,6 +390,27 @@ CULT.UI = {
     }).join('');
     container.querySelectorAll('[data-learn]').forEach((btn) => {
       btn.addEventListener('click', () => CULT.Game.learnTechnique(btn.dataset.learn));
+    });
+  },
+
+  renderMap(state) {
+    const container = CULT.UI.el('map-list');
+    const maps = CULT.Data.getAllUnlockedMaps(state);
+    container.innerHTML = maps.map((map) => {
+      const isCurrent = state.selectedMapId === map.id;
+      const actionHtml = isCurrent
+        ? `<span class="text-xs text-emerald-400">当前</span>`
+        : `<button class="btn-secondary text-xs px-2 py-1" data-select-map="${map.id}">切换</button>`;
+      return `<div class="flex items-center justify-between panel ${isCurrent ? 'rarity-uncommon border' : ''}">
+        <div>
+          <div class="font-medium">${map.name}</div>
+          <div class="text-xs text-slate-400">${map.desc}</div>
+        </div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+    container.querySelectorAll('[data-select-map]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.selectMap(btn.dataset.selectMap));
     });
   },
 
@@ -445,9 +475,10 @@ CULT.UI = {
     const species = CULT.Data.getPetSpecies(pet.speciesId);
     const stage = CULT.Data.getPetStage(pet.level);
     const quality = CULT.Data.getPetQuality(pet.quality);
+    const type = CULT.Data.getPetType(pet);
     const threshold = CULT.Data.getPetExpThreshold(pet.level);
     const pct = CULT.utils.clamp((pet.exp / threshold) * 100, 0, 100);
-    return { species, stage, quality, threshold, pct };
+    return { species, stage, quality, type, threshold, pct };
   },
 
   renderPets(state) {
@@ -463,13 +494,14 @@ CULT.UI = {
             <span class="flex-1">空位</span>
           </div>`;
         }
-        const { species, stage, quality, threshold, pct } = CULT.UI.renderPetCard(pet);
+        const { species, stage, quality, type, threshold, pct } = CULT.UI.renderPetCard(pet);
         return `<div class="flex gap-3 items-center panel">
           <div class="shrink-0">${CULT.Icons.petAura(stage.id, species ? species.emoji : '?')}</div>
           <div class="flex-1">
             <div class="flex items-center justify-between">
               <span ${CULT.UI.tooltipAttr(CULT.UI.petTooltipText(pet), 'font-medium')}>${species ? species.name : pet.speciesId}</span>
               <span class="flex gap-1">
+                <span class="tier-badge ${type.id}">${type.emoji}${type.name}</span>
                 <span class="tier-badge">${stage.name}</span>
                 <span class="tier-badge ${quality.id}">${quality.name}</span>
               </span>
@@ -498,7 +530,7 @@ CULT.UI = {
     CULT.UI.el('pets-roster-empty').classList.toggle('hidden', state.pets.owned.length > 0);
     rosterContainer.innerHTML = state.pets.owned
       .map((pet) => {
-        const { species, stage, quality } = CULT.UI.renderPetCard(pet);
+        const { species, stage, quality, type } = CULT.UI.renderPetCard(pet);
         const isActive = activeIds.includes(pet.instanceId);
         const actionHtml = isActive
           ? `<button class="btn-secondary text-xs px-2 py-1" data-deactivate-pet="${pet.instanceId}">下场</button>`
@@ -509,6 +541,7 @@ CULT.UI = {
           <div class="flex items-center justify-between">
             <div>
               <span ${CULT.UI.tooltipAttr(CULT.UI.petTooltipText(pet), 'font-medium')}>${species ? species.name : pet.speciesId}</span>
+              <span class="tier-badge ${type.id}">${type.emoji}${type.name}</span>
               <span class="tier-badge">${stage.name}</span>
               <span class="tier-badge ${quality.id}">${quality.name}</span>
               <span class="text-xs text-slate-400">Lv.${pet.level}</span>
@@ -674,20 +707,22 @@ CULT.UI = {
     });
   },
 
-  renderElite(state) {
-    const cost = CULT.Data.getEliteChallengeCost(state.character.realmId);
-    CULT.UI.el('elite-cost-text').textContent = `挑战花费：${cost} 灵石`;
+  renderSanctums(state) {
     const resting = state.character.restTicksRemaining > 0;
-    const btn = CULT.UI.el('elite-challenge-btn');
-    if (state.combat.isEliteChallenge) {
-      btn.disabled = true;
-      btn.textContent = '秘境挑战进行中';
-    } else if (resting) {
-      btn.disabled = true;
-      btn.textContent = '闭关中，无法出战';
-    } else {
-      btn.disabled = state.character.spiritStones < cost;
-      btn.textContent = `挑战 (${cost} 灵石)`;
+    for (const tier of ['elite', 'demonlord']) {
+      const cost = CULT.Data.getSanctumCost(state.character.realmId, tier);
+      CULT.UI.el(`sanctum-cost-text-${tier}`).textContent = `挑战花费：${cost} 灵石`;
+      const btn = CULT.UI.el(`sanctum-challenge-btn-${tier}`);
+      if (state.combat.isEliteChallenge) {
+        btn.disabled = true;
+        btn.textContent = state.combat.challengeTier === tier ? '挑战进行中' : '其他秘境挑战进行中';
+      } else if (resting) {
+        btn.disabled = true;
+        btn.textContent = '闭关中，无法出战';
+      } else {
+        btn.disabled = state.character.spiritStones < cost;
+        btn.textContent = `挑战 (${cost} 灵石)`;
+      }
     }
   },
 

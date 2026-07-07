@@ -43,16 +43,22 @@ CULT.Combat = {
       spdMult += fabao.bonuses.spdMult || 0;
     }
 
-    // 出战宠物（最多3只）叠加气血/防御/速度加成；攻击力改为战斗中单独一条伤害线（见 getPetRoundDamage），不再计入这里
+    // 出战宠物（最多3只）按类型把加成投入不同的地方：
+    // 陆地->气血/防御，飞行->修炼速度，海洋->自身出手伤害（见 getPetRoundDamage，这里不处理）
     for (const petId of (state.pets.activeIds || []).slice(0, 3)) {
       const pet = state.pets.owned.find((p) => p.instanceId === petId);
       if (!pet) continue;
       const stage = CULT.Data.getPetStage(pet.level);
       const quality = CULT.Data.getPetQuality(pet.quality); // 旧存档没有 quality 字段时会兜底为"普通"
       const petBonus = (stage.bonusMult + (pet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel) * quality.statMult;
-      hpMult += petBonus;
-      defMult += petBonus;
-      spdMult += petBonus;
+      const type = CULT.Data.getPetType(pet).id;
+      if (type === 'land') {
+        hpMult += petBonus * CULT.TUNING.petLandStatWeight;
+        defMult += petBonus * CULT.TUNING.petLandStatWeight;
+      } else if (type === 'flying') {
+        cultivationSpeedMult += petBonus * CULT.TUNING.petFlyingCultivationWeight;
+      }
+      // sea 型宠物的加成完全体现在 getPetRoundDamage 里，这里不叠加任何 mult
     }
 
     return {
@@ -96,7 +102,10 @@ CULT.Combat = {
     const raw = playerBase.atk * CULT.TUNING.petAtkFractionOfPlayerBase
       * (1 + stage.bonusMult * 2) * quality.statMult
       * (1 + (pet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel);
-    return Math.max(0, Math.floor(raw));
+    // 海洋型宠物把加成整个投入到这里，陆地/飞行型的加成已经投入别处，这里打折扣
+    const type = CULT.Data.getPetType(pet).id;
+    const typeMult = type === 'sea' ? CULT.TUNING.petSeaDamageMult : CULT.TUNING.petNonSeaDamageMult;
+    return Math.max(0, Math.floor(raw * typeMult));
   },
 
   // 出战宠物本回合的总伤害（用于战斗结算和离线估算，两处保持一致）
@@ -142,8 +151,10 @@ CULT.Combat = {
     });
   },
 
-  rollLoot(monsterDef) {
+  // state 用于读取当前选择的地图，按地图的掉落侧重调整各类概率（未选地图时倍率均为1，行为和之前完全一样）
+  rollLoot(monsterDef, state) {
     const loot = monsterDef.loot;
+    const mapId = state ? state.selectedMapId : null;
     const result = {
       exp: CULT.utils.randInt(loot.expRange[0], loot.expRange[1]),
       stones: CULT.utils.randInt(loot.stonesRange[0], loot.stonesRange[1]),
@@ -152,17 +163,21 @@ CULT.Combat = {
       fabao: [],
       pets: [],
     };
+    const materialMult = CULT.Data.getMapLootMultiplier(mapId, 'material');
+    const equipMult = CULT.Data.getMapLootMultiplier(mapId, 'equipment');
+    const fabaoMult = CULT.Data.getMapLootMultiplier(mapId, 'fabao');
+    const petMult = CULT.Data.getMapLootMultiplier(mapId, 'pet');
     for (const mat of loot.materials || []) {
-      if (Math.random() < mat.chance) result.materials.push(mat.id);
+      if (Math.random() < Math.min(1, mat.chance * materialMult)) result.materials.push(mat.id);
     }
     for (const eq of loot.equipment || []) {
-      if (Math.random() < eq.chance) result.equipment.push(eq.id);
+      if (Math.random() < Math.min(1, eq.chance * equipMult)) result.equipment.push(eq.id);
     }
     for (const fb of loot.fabao || []) {
-      if (Math.random() < fb.chance) result.fabao.push(fb.id);
+      if (Math.random() < Math.min(1, fb.chance * fabaoMult)) result.fabao.push(fb.id);
     }
     for (const pet of loot.pets || []) {
-      if (Math.random() < pet.chance) result.pets.push(pet.id);
+      if (Math.random() < Math.min(1, pet.chance * petMult)) result.pets.push(pet.id);
     }
     return result;
   },
@@ -323,7 +338,7 @@ CULT.Combat = {
 
     if (state.combat.currentMonsterHp <= 0) {
       const monsterDef = CULT.MONSTERS.find((m) => m.id === state.combat.currentMonsterId);
-      const loot = CULT.Combat.rollLoot(monsterDef);
+      const loot = CULT.Combat.rollLoot(monsterDef, state);
       character.cultivation += loot.exp;
       character.spiritStones += loot.stones;
       for (const matId of loot.materials) {
@@ -333,9 +348,12 @@ CULT.Combat = {
         state.inventory[eqId] = (state.inventory[eqId] || 0) + 1;
       }
       if (state.combat.isEliteChallenge) {
-        const bonusFabao = CULT.Data.rollWeightedFabao();
-        loot.fabao.push(bonusFabao.id);
+        const isDemonLord = state.combat.challengeTier === 'demonlord';
+        // 魔王秘境奖励更好：额外多roll一次法宝，且稀有度分布向精良/极品倾斜
+        loot.fabao.push(CULT.Data.rollWeightedFabao(isDemonLord).id);
+        if (isDemonLord) loot.fabao.push(CULT.Data.rollWeightedFabao(true).id);
         state.combat.isEliteChallenge = false;
+        state.combat.challengeTier = null;
       }
       for (const fbId of loot.fabao) {
         state.inventory[fbId] = (state.inventory[fbId] || 0) + 1;
@@ -355,6 +373,7 @@ CULT.Combat = {
       character.hp = 0;
       character.restTicksRemaining = CULT.TUNING.restTicksAfterDefeat;
       state.combat.isEliteChallenge = false; // 挑战失败：灵石已消耗，不补发，清掉标记避免遗留
+      state.combat.challengeTier = null;
       CULT.Combat.endEncounter(state);
 
       event.type = 'defeat';

@@ -12,6 +12,12 @@ CULT.REALMS = [
   { id: 8, name: '渡劫', subLevels: 13, baseExpToNext: 3e11, growth: 1.22 },
 ];
 
+// 地图类型：每个境界都会解锁这两种地图，怪物强度不变，只是掉落侧重不同
+CULT.MAP_TYPES = [
+  { id: 'gear', name: '矿脉秘境', desc: '装备、材料掉落几率提升，法宝、宠物掉落几率降低。', equipMult: 1.6, materialMult: 1.4, fabaoMult: 0.5, petMult: 0.5 },
+  { id: 'mystic', name: '灵兽秘境', desc: '法宝、宠物掉落几率提升，装备、材料掉落几率降低。', equipMult: 0.5, materialMult: 0.6, fabaoMult: 1.8, petMult: 1.8 },
+];
+
 CULT.TUNING = {
   tickIntervalMs: 1000,
   autosaveEveryTicks: 10,
@@ -44,11 +50,20 @@ CULT.TUNING = {
   petAtkFractionOfPlayerBase: 0.15, // 单只出战宠物每回合伤害 = 玩家基础攻击的这个比例（再按阶段/品质/等级放大）
   petFusionConversionRate: 0.8, // 融合时，被献祭宠物的已投入经验按此比例转给目标宠物
 
+  // 宠物按类型把加成投入到不同的地方：陆地宠物拆成2个属性(而不是3个)所以单项权重更高，
+  // 飞行宠物把加成整个投入修炼速度，海洋宠物则整个投入自身出手伤害；三者的"总加成"力度大致相当
+  petLandStatWeight: 1.5, // 陆地宠物：气血/防御 各按 petBonus * 此权重 计算
+  petFlyingCultivationWeight: 3, // 飞行宠物：修炼速度按 petBonus * 此权重 计算
+  petSeaDamageMult: 1.8, // 海洋宠物：每回合伤害额外乘这个倍率
+  petNonSeaDamageMult: 0.6, // 陆地/飞行宠物：伤害力度已经投入到别处，每回合伤害打个折扣
+
   monsterTierLevelOffset: { weak: -5, normal: 0, elite: 8, boss: 20 }, // 纯展示用，不影响实际战斗数值
 
   eliteChallengeBaseCost: 50,
   eliteChallengeCostGrowth: 1.4, // 每跨一个大境界，挑战花费按此倍率增长
   eliteChallengeExtraMult: 1.5, // 精英关卡怪物在原有难度系数基础上再乘的强化倍率
+  demonLordCostMult: 2.5, // 魔王秘境花费 = 精英秘境花费 * 此倍率
+  demonLordExtraMult: 2.2, // 魔王秘境怪物强化倍率，比精英秘境更狠
 
   shopRefreshBaseCost: 2,
   shopStockSize: 6,
@@ -121,15 +136,22 @@ CULT.PET_STAGES = [
   { id: 4, name: '神兽', minLevel: 50, bonusMult: 0.30 },
 ];
 
+// 宠物类型：决定加成落在哪个属性上（陆地宠物加生存，飞行宠物加修炼速度，海洋宠物加宠物自身伤害）
+CULT.PET_TYPES = [
+  { id: 'land', name: '陆地', emoji: '\u{1F43E}' },
+  { id: 'flying', name: '飞行', emoji: '\u{1F985}' },
+  { id: 'sea', name: '海洋', emoji: '\u{1F30A}' },
+];
+
 // 可捕获的宠物种类，来源于对应的怪物（复用其 emoji）
 CULT.PET_SPECIES = [
-  { id: 'pet_slime', name: '灵雾史莱姆宝宝', sourceMonsterId: 'slime', emoji: '\u{1F4A7}' },
-  { id: 'pet_wolf', name: '妖狼幼崽', sourceMonsterId: 'wolf', emoji: '\u{1F43A}' },
-  { id: 'pet_boar', name: '铁鬃小猪', sourceMonsterId: 'boar', emoji: '\u{1F417}' },
-  { id: 'pet_fox', name: '九尾狐仔', sourceMonsterId: 'elite_fox', emoji: '\u{1F98A}' },
-  { id: 'pet_crane', name: '玄羽雏鹤', sourceMonsterId: 'crane', emoji: '\u{1F54A}️' },
-  { id: 'pet_python', name: '玄冥小蟒', sourceMonsterId: 'elite_python', emoji: '\u{1F40D}' },
-  { id: 'pet_phantom', name: '化神小灵', sourceMonsterId: 'phantom', emoji: '\u{1F47B}' },
+  { id: 'pet_slime', name: '灵雾史莱姆宝宝', sourceMonsterId: 'slime', emoji: '\u{1F4A7}', type: 'land' },
+  { id: 'pet_wolf', name: '妖狼幼崽', sourceMonsterId: 'wolf', emoji: '\u{1F43A}', type: 'land' },
+  { id: 'pet_boar', name: '铁鬃小猪', sourceMonsterId: 'boar', emoji: '\u{1F417}', type: 'land' },
+  { id: 'pet_fox', name: '九尾狐仔', sourceMonsterId: 'elite_fox', emoji: '\u{1F98A}', type: 'flying' },
+  { id: 'pet_crane', name: '玄羽雏鹤', sourceMonsterId: 'crane', emoji: '\u{1F54A}️', type: 'flying' },
+  { id: 'pet_python', name: '玄冥小蟒', sourceMonsterId: 'elite_python', emoji: '\u{1F40D}', type: 'sea' },
+  { id: 'pet_phantom', name: '化神小灵', sourceMonsterId: 'phantom', emoji: '\u{1F47B}', type: 'sea' },
 ];
 
 // 装备：flat 加成
@@ -213,6 +235,50 @@ CULT.Data = {
     return CULT.Data.getRealm(realmId).subLevels;
   },
 
+  // 某个境界解锁的2张地图，按 境界+类型 组合生成，不需要逐个手写
+  getMapsForRealm(realmId) {
+    const realm = CULT.Data.getRealm(realmId);
+    return CULT.MAP_TYPES.map((t) => ({
+      id: `map_${realmId}_${t.id}`,
+      realmId,
+      typeId: t.id,
+      name: `${realm.name}·${t.name}`,
+      desc: t.desc,
+    }));
+  },
+
+  // 玩家当前已解锁的所有地图（当前境界 + 之前所有境界，可以回头刷低境界地图）
+  getAllUnlockedMaps(state) {
+    const maps = [];
+    for (let realmId = 0; realmId <= state.character.realmId; realmId++) {
+      maps.push(...CULT.Data.getMapsForRealm(realmId));
+    }
+    return maps;
+  },
+
+  getMap(mapId) {
+    if (!mapId) return null;
+    const match = /^map_(\d+)_(\w+)$/.exec(mapId);
+    if (!match) return null;
+    const realmId = Number(match[1]);
+    const typeId = match[2];
+    const type = CULT.MAP_TYPES.find((t) => t.id === typeId);
+    if (!type) return null;
+    const realm = CULT.Data.getRealm(realmId);
+    if (!realm) return null;
+    return { id: mapId, realmId, typeId, name: `${realm.name}·${type.name}`, desc: type.desc };
+  },
+
+  // category: 'equipment' | 'material' | 'fabao' | 'pet'；mapId 为空（尚未选择地图）时按 1 倍不做任何调整
+  getMapLootMultiplier(mapId, category) {
+    const match = /^map_\d+_(\w+)$/.exec(mapId || '');
+    if (!match) return 1;
+    const type = CULT.MAP_TYPES.find((t) => t.id === match[1]);
+    if (!type) return 1;
+    const key = { equipment: 'equipMult', material: 'materialMult', fabao: 'fabaoMult', pet: 'petMult' }[category];
+    return type[key] || 1;
+  },
+
   isMaxRealm(realmId) {
     return realmId >= CULT.REALMS.length - 1;
   },
@@ -271,6 +337,13 @@ CULT.Data = {
     return CULT.PET_SPECIES.find((p) => p.id === id);
   },
 
+  // 宠物实例 -> 类型定义；旧存档/未知种类兜底为陆地
+  getPetType(pet) {
+    const species = CULT.Data.getPetSpecies(pet.speciesId);
+    const typeId = species ? species.type : 'land';
+    return CULT.PET_TYPES.find((t) => t.id === typeId) || CULT.PET_TYPES[0];
+  },
+
   // 按等级从高到低找到第一个满足 minLevel 的阶段（数组本身按等级升序排列）
   getPetStage(level) {
     let stage = CULT.PET_STAGES[0];
@@ -311,8 +384,18 @@ CULT.Data = {
     return Math.floor(CULT.TUNING.eliteChallengeBaseCost * Math.pow(CULT.TUNING.eliteChallengeCostGrowth, realmId));
   },
 
-  rollWeightedFabao() {
-    const weights = { common: 50, uncommon: 25, rare: 15, epic: 4 };
+  // tier: 'elite' | 'demonlord'，魔王秘境在精英秘境花费基础上再乘一个倍率
+  getSanctumCost(realmId, tier) {
+    const base = CULT.Data.getEliteChallengeCost(realmId);
+    return tier === 'demonlord' ? Math.floor(base * CULT.TUNING.demonLordCostMult) : base;
+  },
+
+  getSanctumExtraMult(tier) {
+    return tier === 'demonlord' ? CULT.TUNING.demonLordExtraMult : CULT.TUNING.eliteChallengeExtraMult;
+  },
+
+  rollWeightedFabao(biasRare) {
+    const weights = biasRare ? { common: 15, uncommon: 30, rare: 35, epic: 20 } : { common: 50, uncommon: 25, rare: 15, epic: 4 };
     return CULT.utils.weightedPick(CULT.FABAO, (f) => weights[f.rarity] || 1);
   },
 

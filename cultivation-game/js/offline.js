@@ -18,6 +18,13 @@ CULT.Offline = {
     const petChances = {};
     const petLevels = {}; // 每个宠物种类固定绑定到它来源怪物的等级，不做加权平均
 
+    // 离线估算要跟在线掉落用同一套地图倍率，否则挂在"灵兽秘境"离线反而估算不到额外的法宝/宠物
+    const mapId = state.selectedMapId;
+    const materialMult = CULT.Data.getMapLootMultiplier(mapId, 'material');
+    const equipMult = CULT.Data.getMapLootMultiplier(mapId, 'equipment');
+    const fabaoMult = CULT.Data.getMapLootMultiplier(mapId, 'fabao');
+    const petMult = CULT.Data.getMapLootMultiplier(mapId, 'pet');
+
     monsters.forEach((m, i) => {
       const w = weights[i] / totalWeight;
       const instance = CULT.Combat.instantiateMonster(m, state);
@@ -27,16 +34,16 @@ CULT.Offline = {
       expMid += ((m.loot.expRange[0] + m.loot.expRange[1]) / 2) * w;
       stonesMid += ((m.loot.stonesRange[0] + m.loot.stonesRange[1]) / 2) * w;
       for (const mat of m.loot.materials || []) {
-        materialChances[mat.id] = (materialChances[mat.id] || 0) + mat.chance * w;
+        materialChances[mat.id] = (materialChances[mat.id] || 0) + Math.min(1, mat.chance * materialMult) * w;
       }
       for (const eq of m.loot.equipment || []) {
-        equipmentChances[eq.id] = (equipmentChances[eq.id] || 0) + eq.chance * w;
+        equipmentChances[eq.id] = (equipmentChances[eq.id] || 0) + Math.min(1, eq.chance * equipMult) * w;
       }
       for (const fb of m.loot.fabao || []) {
-        fabaoChances[fb.id] = (fabaoChances[fb.id] || 0) + fb.chance * w;
+        fabaoChances[fb.id] = (fabaoChances[fb.id] || 0) + Math.min(1, fb.chance * fabaoMult) * w;
       }
       for (const pet of m.loot.pets || []) {
-        petChances[pet.id] = (petChances[pet.id] || 0) + pet.chance * w;
+        petChances[pet.id] = (petChances[pet.id] || 0) + Math.min(1, pet.chance * petMult) * w;
         petLevels[pet.id] = CULT.Data.getMonsterLevel(state, m.tier);
       }
     });
