@@ -171,6 +171,8 @@ CULT.EQUIPMENT = [
 // 消耗品
 CULT.CONSUMABLES = [
   { id: 'pill_ju_qi', name: '聚气丹', type: 'exp_boost', desc: '立即获得一定修为。', effect: { flatExp: 500 }, price: 80 },
+  { id: 'pill_ning_qi', name: '凝气丹', type: 'exp_boost', desc: '立即获得一定修为，由3颗聚气丹融合而成。', effect: { flatExp: 1275 }, price: 200 },
+  { id: 'pill_yuan_qi', name: '元气丹', type: 'exp_boost', desc: '立即获得大量修为，由3颗凝气丹融合而成。', effect: { flatExp: 3250 }, price: 500 },
   { id: 'pill_po_jing', name: '破境丹', type: 'breakthrough_boost', desc: '下一次突破成功率提升。', effect: { successChanceBonus: 0.15 }, price: 150 },
   { id: 'pill_liao_shang', name: '疗伤丹', type: 'heal', desc: '立即回复全部气血。', effect: { healPercent: 1.0 }, price: 50 },
   { id: 'pill_atk_boost', name: '锐金丹', type: 'stat_boost', desc: '永久提升攻击。', effect: { stat: 'atk', amount: 25 }, price: 200 },
@@ -200,6 +202,9 @@ CULT.RECIPES = [
   { id: 'recipe_def_pill', name: '玄甲丹方', resultId: 'pill_def_boost', resultCount: 1, materials: { mat_boar_hide: 3, mat_fox_bead: 1 } },
   { id: 'recipe_spd_pill', name: '疾风丹方', resultId: 'pill_spd_boost', resultCount: 1, materials: { mat_crane_feather: 3 } },
   { id: 'recipe_hp_pill', name: '培元丹方', resultId: 'pill_hp_boost', resultCount: 1, materials: { mat_wolf_fang: 2, mat_phantom_dust: 1 } },
+  // 丹药融合：3颗低阶丹药融合成1颗更进阶的，"材料"就是丹药本身
+  { id: 'recipe_qi_pill_fuse_mid', name: '凝气丹方（融合）', resultId: 'pill_ning_qi', resultCount: 1, materials: { pill_ju_qi: 3 } },
+  { id: 'recipe_qi_pill_fuse_high', name: '元气丹方（融合）', resultId: 'pill_yuan_qi', resultCount: 1, materials: { pill_ning_qi: 3 } },
 ];
 
 // 宠物品质：复用现有的稀有度体系（common/uncommon/rare/epic），捕获时随机抽取
@@ -212,9 +217,9 @@ CULT.PET_QUALITIES = [
 
 // 功法：被动加成，所有已修习的功法同时生效（叠加），修习需要消耗灵石
 CULT.TECHNIQUES = [
-  { id: 'tech_basic_qi', name: '基础吐纳诀', desc: '修炼速度 +10%。', cost: 0, bonuses: { cultivationSpeedMult: 0.10 } },
-  { id: 'tech_iron_body', name: '玄铁炼体诀', desc: '气血 +20%，防御 +10%。', cost: 300, bonuses: { hpMult: 0.20, defMult: 0.10 } },
-  { id: 'tech_sword_heart', name: '一念剑心诀', desc: '攻击 +20%。', cost: 600, bonuses: { atkMult: 0.20 } },
+  { id: 'tech_basic_qi', name: '基础吐纳诀', desc: '修炼速度 +10%。', cost: 0, minRealm: 0, bonuses: { cultivationSpeedMult: 0.10 } },
+  { id: 'tech_iron_body', name: '玄铁炼体诀', desc: '气血 +20%，防御 +10%。', cost: 300, minRealm: 0, bonuses: { hpMult: 0.20, defMult: 0.10 } },
+  { id: 'tech_sword_heart', name: '一念剑心诀', desc: '攻击 +20%。', cost: 600, minRealm: 1, bonuses: { atkMult: 0.20 } },
 ];
 
 // 属性说明文字，供悬浮提示使用

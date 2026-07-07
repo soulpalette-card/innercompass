@@ -95,6 +95,9 @@ CULT.UI = {
     CULT.UI.el('realm-name').textContent = realm.name;
     CULT.UI.el('sub-level').textContent = `第${state.character.subLevel}层`;
 
+    const currentMap = CULT.Data.getMap(state.selectedMapId);
+    CULT.UI.el('current-map-text').textContent = currentMap ? `当前地图：${currentMap.name}` : '尚未选择地图（前往"地图"页面选择）';
+
     const info = CULT.Combat.getBreakthroughInfo(state);
     const cultivation = state.character.cultivation;
     if (info.isMaxRealm) {
@@ -300,9 +303,13 @@ CULT.UI = {
       .join('');
   },
 
+  // "材料"泛指配方消耗的东西——炼丹材料本身，或者用于融合的丹药
   materialLabel(id) {
     const material = CULT.Data.getMaterial(id);
-    return material ? material.name : id;
+    if (material) return material.name;
+    const consumable = CULT.Data.getConsumable(id);
+    if (consumable) return consumable.name;
+    return id;
   },
 
   STAT_LABELS: { hp: '气血', atk: '攻击', def: '防御', spd: '速度' },
@@ -372,25 +379,40 @@ CULT.UI = {
       .join(' ');
   },
 
-  renderTechniques(state) {
-    const container = CULT.UI.el('techniques-list');
-    container.innerHTML = CULT.TECHNIQUES.map((tech) => {
-      const learned = state.techniques.learned.includes(tech.id);
-      const canAfford = state.character.spiritStones >= tech.cost;
-      const actionHtml = learned
-        ? `<span class="text-xs text-emerald-400">已修习</span>`
-        : `<button class="btn-secondary text-xs px-2 py-1" data-learn="${tech.id}" ${canAfford ? '' : 'disabled'}>修习 (${tech.cost}灵石)</button>`;
-      return `<div class="flex items-center justify-between panel">
-        <div>
-          <div class="font-medium">${tech.name}</div>
-          <div class="text-xs text-slate-400">${tech.desc}</div>
-        </div>
-        ${actionHtml}
-      </div>`;
-    }).join('');
+  // 单张功法卡片：已修习/境界不够/可修习 三种状态，供功法页和商店的功法区共用
+  techniqueCardHtml(state, tech) {
+    const learned = state.techniques.learned.includes(tech.id);
+    const meetsRealm = state.character.realmId >= tech.minRealm;
+    const canAfford = state.character.spiritStones >= tech.cost;
+    let actionHtml;
+    if (learned) {
+      actionHtml = `<span class="text-xs text-emerald-400">已修习</span>`;
+    } else if (!meetsRealm) {
+      actionHtml = `<span class="text-xs text-slate-500">需要${CULT.Data.getRealm(tech.minRealm).name}境</span>`;
+    } else {
+      actionHtml = `<button class="btn-secondary text-xs px-2 py-1" data-learn="${tech.id}" ${canAfford ? '' : 'disabled'}>修习 (${tech.cost}灵石)</button>`;
+    }
+    return `<div class="flex items-center justify-between panel">
+      <div>
+        <div class="font-medium">${tech.name}</div>
+        <div class="text-xs text-slate-400">${tech.desc}</div>
+      </div>
+      ${actionHtml}
+    </div>`;
+  },
+
+  // 渲染一份完整的功法列表到指定容器并绑定"修习"按钮，功法页和商店的功法区都调这个
+  renderTechniqueList(state, containerId) {
+    const container = CULT.UI.el(containerId);
+    if (!container) return;
+    container.innerHTML = CULT.TECHNIQUES.map((tech) => CULT.UI.techniqueCardHtml(state, tech)).join('');
     container.querySelectorAll('[data-learn]').forEach((btn) => {
       btn.addEventListener('click', () => CULT.Game.learnTechnique(btn.dataset.learn));
     });
+  },
+
+  renderTechniques(state) {
+    CULT.UI.renderTechniqueList(state, 'techniques-list');
   },
 
   renderMap(state) {
@@ -661,6 +683,8 @@ CULT.UI = {
     sellContainer.querySelectorAll('[data-sell]').forEach((btn) => {
       btn.addEventListener('click', () => CULT.Game.sellItem(btn.dataset.sell, 1));
     });
+
+    CULT.UI.renderTechniqueList(state, 'shop-techniques-list');
   },
 
   renderAlchemy(state) {

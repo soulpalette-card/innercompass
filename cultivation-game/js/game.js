@@ -185,6 +185,7 @@ CULT.Game = {
     const tech = CULT.Data.getTechnique(techId);
     if (!tech) return false;
     if (state.techniques.learned.includes(techId)) return false;
+    if (state.character.realmId < tech.minRealm) return false; // 境界不够，不能修习
     if (state.character.spiritStones < tech.cost) return false;
 
     state.character.spiritStones -= tech.cost;
