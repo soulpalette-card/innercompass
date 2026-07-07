@@ -1,0 +1,642 @@
+// 静态数值表。调整数值只需改这个文件，不用碰逻辑代码。
+
+CULT.REALMS = [
+  { id: 0, name: '练气', subLevels: 9, baseExpToNext: 20, growth: 1.35 },
+  { id: 1, name: '筑基', subLevels: 9, baseExpToNext: 800, growth: 1.32 },
+  { id: 2, name: '金丹', subLevels: 9, baseExpToNext: 15000, growth: 1.30 },
+  { id: 3, name: '元婴', subLevels: 9, baseExpToNext: 260000, growth: 1.28 },
+  { id: 4, name: '化神', subLevels: 9, baseExpToNext: 4200000, growth: 1.26 },
+  { id: 5, name: '炼虚', subLevels: 9, baseExpToNext: 70000000, growth: 1.25 },
+  { id: 6, name: '合体', subLevels: 9, baseExpToNext: 1100000000, growth: 1.24 },
+  { id: 7, name: '大乘', subLevels: 9, baseExpToNext: 1.8e10, growth: 1.23 },
+  { id: 8, name: '渡劫', subLevels: 13, baseExpToNext: 3e11, growth: 1.22 },
+];
+
+// 地图类型：每个境界都会解锁这两种地图，怪物强度不变，只是掉落侧重不同
+CULT.MAP_TYPES = [
+  { id: 'gear', name: '矿脉秘境', desc: '装备、材料掉落几率提升，法宝、宠物掉落几率降低。', equipMult: 1.6, materialMult: 1.4, fabaoMult: 0.5, petMult: 0.5 },
+  { id: 'mystic', name: '灵兽秘境', desc: '法宝、宠物掉落几率提升，装备、材料掉落几率降低。', equipMult: 0.5, materialMult: 0.6, fabaoMult: 1.8, petMult: 1.8 },
+];
+
+CULT.TUNING = {
+  tickIntervalMs: 1000,
+  autosaveEveryTicks: 10,
+
+  cultivationPerSecondBase: 3,
+  cultivationPerSecondLevelGrowth: 1.03, // 按全局小层数连续成长（而不是只在跨大境界时才提升），避免同一境界内9层修炼速度都一样
+
+  baseStats: { hp: 60, atk: 9, def: 4, spd: 5 },
+  statGrowthPerLevel: 1.115, // 每小层的属性成长率（作用于全局层数）
+
+  breakthroughBaseChance: 0.85, // 境界内小层突破
+  breakthroughRealmCrossChance: 0.55, // 跨大境界突破
+  breakthroughOverflowBonusPerHundredPercent: 0.15, // 修为每超出阈值100%，成功率+15%（有上限）
+  breakthroughOverflowBonusCap: 0.3,
+  breakthroughFailPenaltyPercent: 0.3, // 突破失败扣除已囤积修为的比例
+
+  monsterDifficultyByTier: { weak: 0.6, normal: 0.85, elite: 1.1, boss: 1.35 },
+  monsterRealmWindowBehind: 2, // 选怪时，向下最多兼容几个大境界的杂兵
+
+  restTicksAfterDefeat: 8, // 被打败后休整的 tick 数（不会真正死亡/清空进度）
+
+  offlineCapHours: 8,
+  offlineEfficiency: 0.5,
+  offlineMinSecondsToShowSummary: 60,
+
+  petExpBaseThreshold: 20, // 宠物升级所需经验曲线，与境界阈值同款公式
+  petExpGrowth: 1.15,
+  petExpPerVictory: 5, // 出战宠物每次战斗胜利获得的经验
+  petBonusPerLevel: 0.003, // 宠物在当前阶段内，每级额外叠加的加成
+  petAtkFractionOfPlayerBase: 0.15, // 单只出战宠物每回合伤害 = 玩家基础攻击的这个比例（再按阶段/品质/等级放大）
+  petFusionConversionRate: 0.8, // 融合时，被献祭宠物的已投入经验按此比例转给目标宠物
+
+  // 宠物按类型把加成投入到不同的地方：陆地宠物拆成2个属性(而不是3个)所以单项权重更高，
+  // 飞行宠物把加成整个投入修炼速度，海洋宠物则整个投入自身出手伤害；三者的"总加成"力度大致相当
+  petLandStatWeight: 1.5, // 陆地宠物：气血/防御 各按 petBonus * 此权重 计算
+  petFlyingCultivationWeight: 3, // 飞行宠物：修炼速度按 petBonus * 此权重 计算
+  petSeaDamageMult: 1.8, // 海洋宠物：每回合伤害额外乘这个倍率
+  petNonSeaDamageMult: 0.6, // 陆地/飞行宠物：伤害力度已经投入到别处，每回合伤害打个折扣
+
+  monsterTierLevelOffset: { weak: -5, normal: 0, elite: 8, boss: 20 }, // 纯展示用，不影响实际战斗数值
+
+  // 速度决定先手：更快的一方本回合先出手，如果这一下就分出胜负，另一方这回合就不再补刀；
+  // 速度优势越大，越快的一方还有几率打出连击（额外多打一次），几率有上限，只有更快的一方才有机会连击
+  extraAttackSpeedFactor: 0.6,
+  extraAttackChanceCap: 0.5,
+
+  // 功法：每3个全局小层解锁1个普通功法，每跨1个大境界解锁1个更强的功法；每个功法可单独升级，最高10级
+  techniqueMaxLevel: 10,
+  techniqueLevelCostGrowth: 1.5, // 每升一级，灵石花费在上一级基础上乘这个倍数
+  techniqueLevelBonusPct: 0.12, // 每级比1级多叠加基础加成的这个比例（10级 = 基础值 * (1+9*0.12) ≈ 2.08倍）
+  techniqueMinorUnlockEveryLevels: 3,
+  techniqueMinorBaseCost: 60,
+  techniqueRealmCostGrowth: 16, // 沿用怪物掉落同款的"每境界约16倍"曲线，让功法花费跟灵石收入同步膨胀
+  techniqueMajorCostMultOfMinor: 6, // 大境界功法比同境界普通功法的基础花费再贵这么多倍
+
+  // 法宝：分解返还法宝点数，点数可用来升级，最高10级；分解已升级的法宝会把投入的点数全部退还
+  fabaoMaxLevel: 10,
+  fabaoLevelCostGrowth: 1.5,
+  fabaoLevelBonusPct: 0.12,
+  fabaoDecomposeBasePoints: { common: 20, uncommon: 60, rare: 220, epic: 900 },
+  fabaoLevelBaseCost: { common: 15, uncommon: 40, rare: 100, epic: 250 }, // 0级升到1级需要的点数，稀有度越高越贵
+
+  // 飞行宠物：修炼速度加成从百分比改成每秒固定修为，跟其他修炼速度加成（百分比）分开计算
+  petFlyingCultivationFlatBase: 2,
+
+  eliteChallengeBaseCost: 50,
+  eliteChallengeCostGrowth: 1.4, // 每跨一个大境界，挑战花费按此倍率增长
+  eliteChallengeExtraMult: 1.5, // 精英关卡怪物在原有难度系数基础上再乘的强化倍率
+  demonLordCostMult: 2.5, // 魔王秘境花费 = 精英秘境花费 * 此倍率
+  demonLordExtraMult: 2.2, // 魔王秘境怪物强化倍率，比精英秘境更狠
+
+  shopRefreshBaseCost: 2,
+  shopStockSize: 6,
+  shopSellRateOfBuyPrice: 0.35,
+  rarityBasePrice: { common: 20, uncommon: 60, rare: 220, epic: 900 },
+
+  // 装备掉落时现场生成属性：每件装备只加成它所属部位主打的那几个属性（xxxMult），
+  // 数值 = (基础% + 怪物等级*每级% ) * 稀有度倍率，再平均分给主打的几个属性，永远按百分比走，不会随数值膨胀而变得没用
+  equipmentSlotStatFocus: { weapon: ['atk'], armor: ['hp', 'def'], accessory: ['atk', 'spd'], boots: ['spd'], gloves: ['atk', 'def'] },
+  equipmentBaseBonusPct: 0.06,
+  equipmentLevelBonusPct: 0.0015,
+};
+
+// 怪物：数值以"相对玩家当前基础属性的倍率"表示，自动随玩家境界缩放
+CULT.MONSTERS = [
+  { id: 'slime', name: '灵雾史莱姆', minRealm: 0, tier: 'weak', emoji: '\u{1F4A7}',
+    mult: { hp: 0.5, atk: 0.4, def: 0.3 },
+    loot: { expRange: [4, 8], stonesRange: [2, 5], materials: [{ id: 'mat_slime_core', chance: 0.25 }], equipment: [],
+      pets: [{ id: 'pet_slime', chance: 0.006 }] } },
+  { id: 'wolf', name: '妖狼', minRealm: 0, tier: 'normal', emoji: '\u{1F43A}',
+    mult: { hp: 0.8, atk: 0.7, def: 0.55 },
+    loot: { expRange: [8, 16], stonesRange: [5, 12], materials: [{ id: 'mat_wolf_fang', chance: 0.3 }], equipment: [{ slot: 'weapon', chance: 0.015 }],
+      fabao: [{ id: 'fabao_atk_leihuo', chance: 0.004 }], pets: [{ id: 'pet_wolf', chance: 0.005 }] } },
+  { id: 'boar', name: '铁鬃野猪', minRealm: 0, tier: 'normal', emoji: '\u{1F417}',
+    mult: { hp: 1.0, atk: 0.6, def: 0.8 },
+    loot: { expRange: [10, 18], stonesRange: [6, 14], materials: [{ id: 'mat_boar_hide', chance: 0.3 }], equipment: [{ slot: 'armor', chance: 0.012 }, { slot: 'gloves', chance: 0.012 }],
+      fabao: [{ id: 'fabao_def_xuangui', chance: 0.004 }], pets: [{ id: 'pet_boar', chance: 0.005 }] } },
+  { id: 'elite_fox', name: '九尾妖狐', minRealm: 1, tier: 'elite', emoji: '\u{1F98A}',
+    mult: { hp: 1.4, atk: 1.2, def: 0.9 },
+    loot: { expRange: [30, 55], stonesRange: [20, 40], materials: [{ id: 'mat_fox_bead', chance: 0.2 }], equipment: [{ slot: 'accessory', chance: 0.02 }],
+      fabao: [{ id: 'fabao_atk_poyun', chance: 0.006 }, { id: 'fabao_boost_hunyuan', chance: 0.003 }], pets: [{ id: 'pet_fox', chance: 0.007 }] } },
+  { id: 'boss_jindan', name: '金丹魔君', minRealm: 2, tier: 'boss', emoji: '\u{1F479}',
+    mult: { hp: 2.2, atk: 1.6, def: 1.2 },
+    loot: { expRange: [200, 350], stonesRange: [150, 260], materials: [{ id: 'mat_demon_core', chance: 0.5 }], equipment: [{ slot: 'weapon', chance: 0.05 }],
+      fabao: [{ id: 'fabao_def_wushuang', chance: 0.015 }, { id: 'fabao_boost_hunyuan', chance: 0.01 }] } },
+  { id: 'crane', name: '玄羽仙鹤', minRealm: 3, tier: 'normal', emoji: '\u{1F54A}️',
+    mult: { hp: 0.9, atk: 0.9, def: 0.7 },
+    loot: { expRange: [80, 140], stonesRange: [60, 110], materials: [{ id: 'mat_crane_feather', chance: 0.25 }], equipment: [{ slot: 'boots', chance: 0.015 }],
+      pets: [{ id: 'pet_crane', chance: 0.007 }] } },
+  { id: 'elite_python', name: '玄冥蛟蟒', minRealm: 3, tier: 'elite', emoji: '\u{1F40D}',
+    mult: { hp: 1.5, atk: 1.3, def: 1.0 },
+    loot: { expRange: [180, 300], stonesRange: [120, 220], materials: [{ id: 'mat_python_scale', chance: 0.2 }], equipment: [{ slot: 'armor', chance: 0.02 }, { slot: 'boots', chance: 0.015 }],
+      fabao: [{ id: 'fabao_def_wushuang', chance: 0.006 }], pets: [{ id: 'pet_python', chance: 0.007 }] } },
+  { id: 'boss_yuanying', name: '元婴期魔尊', minRealm: 3, tier: 'boss', emoji: '\u{1F47A}',
+    mult: { hp: 2.5, atk: 1.8, def: 1.3 },
+    loot: { expRange: [900, 1500], stonesRange: [700, 1200], materials: [{ id: 'mat_demon_core', chance: 0.6 }], equipment: [{ slot: 'accessory', chance: 0.05 }, { slot: 'gloves', chance: 0.03 }],
+      fabao: [{ id: 'fabao_atk_taiyi', chance: 0.015 }, { id: 'fabao_boost_taiji', chance: 0.008 }] } },
+  { id: 'phantom', name: '化神虚影', minRealm: 4, tier: 'normal', emoji: '\u{1F47B}',
+    mult: { hp: 1.0, atk: 1.0, def: 0.8 },
+    loot: { expRange: [500, 900], stonesRange: [400, 700], materials: [{ id: 'mat_phantom_dust', chance: 0.25 }], equipment: [],
+      pets: [{ id: 'pet_phantom', chance: 0.007 }] } },
+  { id: 'boss_huashen', name: '化神大能', minRealm: 4, tier: 'boss', emoji: '\u{1F47F}',
+    mult: { hp: 2.8, atk: 2.0, def: 1.4 },
+    loot: { expRange: [6000, 10000], stonesRange: [5000, 8000], materials: [{ id: 'mat_demon_core', chance: 0.7 }], equipment: [{ slot: 'weapon', chance: 0.08 }],
+      fabao: [{ id: 'fabao_def_pantian', chance: 0.02 }, { id: 'fabao_boost_taiji', chance: 0.015 }] } },
+
+  // 炼虚境专属（此前化神以上境界完全没有专属怪物，只能靠低境界杂兵数值放大凑数）
+  { id: 'void_rhino', name: '幽冥犀', minRealm: 5, tier: 'normal', emoji: '\u{1F98F}',
+    mult: { hp: 1.0, atk: 1.0, def: 0.85 },
+    loot: { expRange: [8000, 14000], stonesRange: [6000, 10500], materials: [{ id: 'mat_rhino_horn', chance: 0.28 }], equipment: [{ slot: 'gloves', chance: 0.02 }],
+      pets: [{ id: 'pet_void_rhino', chance: 0.006 }] } },
+  { id: 'blood_bat', name: '血影蝠皇', minRealm: 5, tier: 'elite', emoji: '\u{1F987}',
+    mult: { hp: 1.6, atk: 1.35, def: 1.05 },
+    loot: { expRange: [18000, 28000], stonesRange: [13000, 21000], materials: [{ id: 'mat_void_essence', chance: 0.06 }], equipment: [{ slot: 'accessory', chance: 0.03 }, { slot: 'boots', chance: 0.02 }],
+      fabao: [{ id: 'fabao_atk_poyun', chance: 0.008 }] } },
+  { id: 'boss_lianxu', name: '炼虚魔尊', minRealm: 5, tier: 'boss', emoji: '\u{1F480}',
+    mult: { hp: 3.0, atk: 2.1, def: 1.5 },
+    loot: { expRange: [170000, 260000], stonesRange: [130000, 200000], materials: [{ id: 'mat_demon_core', chance: 0.75 }, { id: 'mat_void_essence', chance: 0.12 }], equipment: [{ slot: 'weapon', chance: 0.09 }],
+      fabao: [{ id: 'fabao_atk_taiyi', chance: 0.025 }, { id: 'fabao_boost_taiji', chance: 0.02 }] } },
+
+  // 合体境专属
+  { id: 'suanni', name: '玄天狻猊', minRealm: 6, tier: 'normal', emoji: '\u{1F981}',
+    mult: { hp: 1.05, atk: 1.05, def: 0.88 },
+    loot: { expRange: [125000, 220000], stonesRange: [95000, 165000], materials: [{ id: 'mat_suanni_mane', chance: 0.28 }], equipment: [{ slot: 'armor', chance: 0.02 }],
+      pets: [{ id: 'pet_suanni', chance: 0.006 }] } },
+  { id: 'flame_ape', name: '赤炎魔猿', minRealm: 6, tier: 'elite', emoji: '\u{1F98D}',
+    mult: { hp: 1.7, atk: 1.4, def: 1.1 },
+    loot: { expRange: [280000, 440000], stonesRange: [210000, 330000], materials: [{ id: 'mat_void_essence', chance: 0.07 }], equipment: [{ slot: 'gloves', chance: 0.03 }, { slot: 'weapon', chance: 0.02 }],
+      fabao: [{ id: 'fabao_def_wushuang', chance: 0.009 }] } },
+  { id: 'boss_heti', name: '合体天魔', minRealm: 6, tier: 'boss', emoji: '\u{1F47D}',
+    mult: { hp: 3.2, atk: 2.2, def: 1.55 },
+    loot: { expRange: [2650000, 4100000], stonesRange: [2000000, 3100000], materials: [{ id: 'mat_demon_core', chance: 0.8 }, { id: 'mat_void_essence', chance: 0.14 }], equipment: [{ slot: 'armor', chance: 0.10 }],
+      fabao: [{ id: 'fabao_def_pantian', chance: 0.03 }, { id: 'fabao_boost_taiji', chance: 0.025 }] } },
+
+  // 大乘境专属
+  { id: 'thunderbird', name: '紫霄雷鸟', minRealm: 7, tier: 'normal', emoji: '\u{1F985}',
+    mult: { hp: 1.1, atk: 1.1, def: 0.9 },
+    loot: { expRange: [2000000, 3600000], stonesRange: [1500000, 2700000], materials: [{ id: 'mat_thunder_feather', chance: 0.25 }], equipment: [{ slot: 'boots', chance: 0.02 }],
+      pets: [{ id: 'pet_thunderbird', chance: 0.006 }] } },
+  { id: 'baize', name: '太虚白泽', minRealm: 7, tier: 'elite', emoji: '\u{1F984}',
+    mult: { hp: 1.8, atk: 1.45, def: 1.15 },
+    loot: { expRange: [4500000, 7200000], stonesRange: [3400000, 5400000], materials: [{ id: 'mat_tribulation_crystal', chance: 0.05 }], equipment: [{ slot: 'accessory', chance: 0.03 }, { slot: 'armor', chance: 0.02 }],
+      fabao: [{ id: 'fabao_atk_poyun', chance: 0.01 }] } },
+  { id: 'boss_dacheng', name: '大乘魔皇', minRealm: 7, tier: 'boss', emoji: '\u{1F608}',
+    mult: { hp: 3.4, atk: 2.3, def: 1.6 },
+    loot: { expRange: [43000000, 67000000], stonesRange: [32000000, 50000000], materials: [{ id: 'mat_demon_core', chance: 0.85 }, { id: 'mat_tribulation_crystal', chance: 0.1 }], equipment: [{ slot: 'accessory', chance: 0.11 }],
+      fabao: [{ id: 'fabao_atk_taiyi', chance: 0.035 }, { id: 'fabao_boost_taiji', chance: 0.03 }] } },
+
+  // 渡劫境专属：终极内容，九天雷劫兽是目前的最终 boss
+  { id: 'tribulation_beast', name: '劫云凶兽', minRealm: 8, tier: 'normal', emoji: '\u{1F43B}',
+    mult: { hp: 1.15, atk: 1.15, def: 0.92 },
+    loot: { expRange: [33000000, 60000000], stonesRange: [25000000, 45000000], materials: [{ id: 'mat_tribulation_fur', chance: 0.25 }], equipment: [{ slot: 'gloves', chance: 0.025 }],
+      pets: [{ id: 'pet_tribulation_beast', chance: 0.006 }] } },
+  { id: 'demon_scorpion', name: '通天魔尊', minRealm: 8, tier: 'elite', emoji: '\u{1F982}',
+    mult: { hp: 1.9, atk: 1.5, def: 1.2 },
+    loot: { expRange: [75000000, 120000000], stonesRange: [56000000, 90000000], materials: [{ id: 'mat_tribulation_crystal', chance: 0.06 }], equipment: [{ slot: 'weapon', chance: 0.035 }, { slot: 'boots', chance: 0.025 }],
+      fabao: [{ id: 'fabao_def_wushuang', chance: 0.012 }] } },
+  { id: 'boss_dujie', name: '九天雷劫兽', minRealm: 8, tier: 'boss', emoji: '\u{1F409}',
+    mult: { hp: 4.0, atk: 2.6, def: 1.8 },
+    loot: { expRange: [700000000, 1100000000], stonesRange: [520000000, 830000000], materials: [{ id: 'mat_demon_core', chance: 0.9 }, { id: 'mat_tribulation_crystal', chance: 0.15 }], equipment: [{ slot: 'weapon', chance: 0.12 }, { slot: 'armor', chance: 0.08 }],
+      fabao: [{ id: 'fabao_atk_taiyi', chance: 0.04 }, { id: 'fabao_def_pantian', chance: 0.04 }, { id: 'fabao_boost_taiji', chance: 0.05 }] } },
+];
+
+// 法宝：分攻击/防御/增幅三类，加成为百分比（xxxMult），后期数值达到万/亿级别时依然有意义
+CULT.FABAO = [
+  { id: 'fabao_atk_leihuo', name: '雷火令', category: 'attack', rarity: 'common', bonuses: { atkMult: 0.12 } },
+  { id: 'fabao_atk_poyun', name: '破云印', category: 'attack', rarity: 'rare', bonuses: { atkMult: 0.25, spdMult: 0.05 } },
+  { id: 'fabao_atk_taiyi', name: '太乙神雷', category: 'attack', rarity: 'epic', bonuses: { atkMult: 0.45 } },
+  { id: 'fabao_def_xuangui', name: '玄龟盾', category: 'defense', rarity: 'common', bonuses: { defMult: 0.12, hpMult: 0.08 } },
+  { id: 'fabao_def_wushuang', name: '无双铠', category: 'defense', rarity: 'rare', bonuses: { defMult: 0.25, hpMult: 0.15 } },
+  { id: 'fabao_def_pantian', name: '盘天镜', category: 'defense', rarity: 'epic', bonuses: { defMult: 0.4, hpMult: 0.3 } },
+  { id: 'fabao_boost_hunyuan', name: '混元珠', category: 'boost', rarity: 'rare', bonuses: { atkMult: 0.1, defMult: 0.1, hpMult: 0.1, spdMult: 0.1 } },
+  { id: 'fabao_boost_taiji', name: '太极葫芦', category: 'boost', rarity: 'epic', bonuses: { atkMult: 0.18, defMult: 0.18, hpMult: 0.18, spdMult: 0.18 } },
+];
+
+// 宠物阶段：所有宠物共用的通用段位，随等级自动跨阶段
+CULT.PET_STAGES = [
+  { id: 0, name: '妖兽', minLevel: 1, bonusMult: 0.02 },
+  { id: 1, name: '魔兽', minLevel: 10, bonusMult: 0.05 },
+  { id: 2, name: '邪兽', minLevel: 20, bonusMult: 0.10 },
+  { id: 3, name: '圣兽', minLevel: 35, bonusMult: 0.18 },
+  { id: 4, name: '神兽', minLevel: 50, bonusMult: 0.30 },
+];
+
+// 宠物类型：决定加成落在哪个属性上（陆地宠物加生存，飞行宠物加修炼速度，海洋宠物加宠物自身伤害）
+CULT.PET_TYPES = [
+  { id: 'land', name: '陆地', emoji: '\u{1F43E}' },
+  { id: 'flying', name: '飞行', emoji: '\u{1F985}' },
+  { id: 'sea', name: '海洋', emoji: '\u{1F30A}' },
+];
+
+// 可捕获的宠物种类，来源于对应的怪物（复用其 emoji）
+CULT.PET_SPECIES = [
+  { id: 'pet_slime', name: '灵雾史莱姆宝宝', sourceMonsterId: 'slime', emoji: '\u{1F4A7}', type: 'land' },
+  { id: 'pet_wolf', name: '妖狼幼崽', sourceMonsterId: 'wolf', emoji: '\u{1F43A}', type: 'land' },
+  { id: 'pet_boar', name: '铁鬃小猪', sourceMonsterId: 'boar', emoji: '\u{1F417}', type: 'land' },
+  { id: 'pet_fox', name: '九尾狐仔', sourceMonsterId: 'elite_fox', emoji: '\u{1F98A}', type: 'flying' },
+  { id: 'pet_crane', name: '玄羽雏鹤', sourceMonsterId: 'crane', emoji: '\u{1F54A}️', type: 'flying' },
+  { id: 'pet_python', name: '玄冥小蟒', sourceMonsterId: 'elite_python', emoji: '\u{1F40D}', type: 'sea' },
+  { id: 'pet_phantom', name: '化神小灵', sourceMonsterId: 'phantom', emoji: '\u{1F47B}', type: 'sea' },
+  { id: 'pet_void_rhino', name: '幽冥犀崽', sourceMonsterId: 'void_rhino', emoji: '\u{1F98F}', type: 'land' },
+  { id: 'pet_suanni', name: '玄天小狻猊', sourceMonsterId: 'suanni', emoji: '\u{1F981}', type: 'land' },
+  { id: 'pet_thunderbird', name: '紫霄雏雷鸟', sourceMonsterId: 'thunderbird', emoji: '\u{1F985}', type: 'flying' },
+  { id: 'pet_tribulation_beast', name: '劫云小凶兽', sourceMonsterId: 'tribulation_beast', emoji: '\u{1F43B}', type: 'sea' },
+];
+
+// 装备：掉落时按怪物等级现场生成属性（百分比加成），不再是固定表——见 CULT.Data.generateEquipmentStats
+CULT.EQUIPMENT_RARITIES = [
+  { id: 'common', name: '普通', weight: 60, mult: 1.0 },
+  { id: 'uncommon', name: '优良', weight: 25, mult: 1.3 },
+  { id: 'rare', name: '精良', weight: 12, mult: 1.7 },
+  { id: 'epic', name: '极品', weight: 3, mult: 2.3 },
+];
+
+// 每个部位主打的属性；生成时百分比会平均分给这些属性
+CULT.EQUIPMENT_NAME_POOL = {
+  weapon: ['青锋剑', '墨隐剑', '裂魂刀', '紫电枪'],
+  armor: ['玄铁甲', '玄冥战袍', '天罡铠', '龙鳞甲'],
+  accessory: ['灵犀指环', '紫炎戒', '星辰坠', '乾坤符'],
+  boots: ['云行靴', '破军战靴', '疾风履', '踏浪靴'],
+  gloves: ['龙爪手套', '金鳞护手', '烈焰拳套', '寒冰护腕'],
+};
+
+// 消耗品
+CULT.CONSUMABLES = [
+  { id: 'pill_ju_qi', name: '聚气丹', type: 'exp_boost', desc: '立即获得一定修为。', effect: { flatExp: 500 }, price: 80 },
+  { id: 'pill_ning_qi', name: '凝气丹', type: 'exp_boost', desc: '立即获得一定修为，由3颗聚气丹融合而成。', effect: { flatExp: 1275 }, price: 200 },
+  { id: 'pill_yuan_qi', name: '元气丹', type: 'exp_boost', desc: '立即获得大量修为，由3颗凝气丹融合而成。', effect: { flatExp: 3250 }, price: 500 },
+  { id: 'pill_taiyi', name: '太乙丹', type: 'exp_boost', desc: '立即获得海量修为，由3颗元气丹融合而成。', effect: { flatExp: 8300 }, price: 1250 },
+  { id: 'pill_tianjie', name: '天劫丹', type: 'exp_boost', desc: '立即获得恐怖修为，需集齐炼虚至渡劫四境的稀有材料方能炼制。', effect: { flatExp: 500000 }, price: 40000 },
+  { id: 'pill_po_jing', name: '破境丹', type: 'breakthrough_boost', desc: '下一次突破成功率提升。', effect: { successChanceBonus: 0.15 }, price: 150 },
+  { id: 'pill_liao_shang', name: '疗伤丹', type: 'heal', desc: '立即回复全部气血。', effect: { healPercent: 1.0 }, price: 50 },
+  { id: 'pill_atk_boost', name: '锐金丹', type: 'stat_boost', desc: '永久提升攻击。', effect: { stat: 'atk', amount: 25 }, price: 200 },
+  { id: 'pill_def_boost', name: '玄甲丹', type: 'stat_boost', desc: '永久提升防御。', effect: { stat: 'def', amount: 15 }, price: 180 },
+  { id: 'pill_spd_boost', name: '疾风丹', type: 'stat_boost', desc: '永久提升速度。', effect: { stat: 'spd', amount: 10 }, price: 150 },
+  { id: 'pill_hp_boost', name: '培元丹', type: 'stat_boost', desc: '永久提升气血上限。', effect: { stat: 'hp', amount: 100 }, price: 150 },
+];
+
+// 炼制材料（怪物掉落），供炼丹配方和商店定价引用
+CULT.MATERIALS = [
+  { id: 'mat_slime_core', name: '史莱姆核心', rarity: 'common' },
+  { id: 'mat_wolf_fang', name: '妖狼獠牙', rarity: 'common' },
+  { id: 'mat_boar_hide', name: '野猪硬皮', rarity: 'common' },
+  { id: 'mat_fox_bead', name: '妖狐内丹', rarity: 'uncommon' },
+  { id: 'mat_demon_core', name: '魔君精魄', rarity: 'rare' },
+  { id: 'mat_crane_feather', name: '仙鹤羽毛', rarity: 'uncommon' },
+  { id: 'mat_python_scale', name: '蛟蟒鳞片', rarity: 'rare' },
+  { id: 'mat_phantom_dust', name: '虚影灵尘', rarity: 'rare' },
+  { id: 'mat_rhino_horn', name: '幽冥犀角', rarity: 'rare' },
+  { id: 'mat_suanni_mane', name: '狻猊鬃毛', rarity: 'rare' },
+  { id: 'mat_thunder_feather', name: '雷鸟羽', rarity: 'epic' },
+  { id: 'mat_tribulation_fur', name: '劫兽皮毛', rarity: 'epic' },
+  { id: 'mat_void_essence', name: '虚灵精华', rarity: 'epic' },
+  { id: 'mat_tribulation_crystal', name: '天劫神晶', rarity: 'epic' },
+];
+
+// 炼丹固定配方：材料组合 -> 丹药
+CULT.RECIPES = [
+  { id: 'recipe_qi_pill', name: '聚气丹方', resultId: 'pill_ju_qi', resultCount: 1, materials: { mat_slime_core: 3, mat_wolf_fang: 2 } },
+  { id: 'recipe_breakthrough_pill', name: '破境丹方', resultId: 'pill_po_jing', resultCount: 1, materials: { mat_boar_hide: 2, mat_fox_bead: 1 } },
+  { id: 'recipe_heal_pill', name: '疗伤丹方', resultId: 'pill_liao_shang', resultCount: 1, materials: { mat_wolf_fang: 2, mat_boar_hide: 2 } },
+  { id: 'recipe_atk_pill', name: '锐金丹方', resultId: 'pill_atk_boost', resultCount: 1, materials: { mat_demon_core: 1, mat_python_scale: 2 } },
+  { id: 'recipe_def_pill', name: '玄甲丹方', resultId: 'pill_def_boost', resultCount: 1, materials: { mat_boar_hide: 3, mat_fox_bead: 1 } },
+  { id: 'recipe_spd_pill', name: '疾风丹方', resultId: 'pill_spd_boost', resultCount: 1, materials: { mat_crane_feather: 3 } },
+  { id: 'recipe_hp_pill', name: '培元丹方', resultId: 'pill_hp_boost', resultCount: 1, materials: { mat_wolf_fang: 2, mat_phantom_dust: 1 } },
+  // 丹药融合：3颗低阶丹药融合成1颗更进阶的，"材料"就是丹药本身
+  { id: 'recipe_qi_pill_fuse_mid', name: '凝气丹方（融合）', resultId: 'pill_ning_qi', resultCount: 1, materials: { pill_ju_qi: 3 } },
+  { id: 'recipe_qi_pill_fuse_high', name: '元气丹方（融合）', resultId: 'pill_yuan_qi', resultCount: 1, materials: { pill_ning_qi: 3 } },
+  { id: 'recipe_qi_pill_fuse_highest', name: '太乙丹方（融合）', resultId: 'pill_taiyi', resultCount: 1, materials: { pill_yuan_qi: 3 } },
+  // 集齐炼虚到渡劫四境的稀有材料才能炼制，是目前的终极配方
+  { id: 'recipe_tianjie_pill', name: '天劫丹方', resultId: 'pill_tianjie', resultCount: 1,
+    materials: { mat_rhino_horn: 3, mat_suanni_mane: 3, mat_thunder_feather: 2, mat_tribulation_fur: 2, mat_void_essence: 2, mat_tribulation_crystal: 2 } },
+];
+
+// 宠物品质：复用现有的稀有度体系（common/uncommon/rare/epic），捕获时随机抽取
+CULT.PET_QUALITIES = [
+  { id: 'common', name: '普通', weight: 60, statMult: 1.0 },
+  { id: 'uncommon', name: '优良', weight: 25, statMult: 1.15 },
+  { id: 'rare', name: '精良', weight: 12, statMult: 1.35 },
+  { id: 'epic', name: '极品', weight: 3, statMult: 1.6 },
+];
+
+// 功法：被动加成，所有已修习的功法同时生效（叠加），修习需要消耗灵石，可单独升级（见 CULT.TUNING.techniqueMaxLevel）
+// 这3个是最初的手写功法，id 不能改（旧存档已经修习过），后面每3个全局小层解锁1个普通功法、每跨1个大境界解锁1个更强的
+// 大境界功法，是按 CULT.REALMS 现场生成的，不用逐个手写
+CULT.TECHNIQUES_BASE = [
+  { id: 'tech_basic_qi', name: '基础吐纳诀', desc: '修炼速度 +10%。', cost: 0, minRealm: 0, minSubLevel: 1, bonuses: { cultivationSpeedMult: 0.10 } },
+  { id: 'tech_iron_body', name: '玄铁炼体诀', desc: '气血 +20%，防御 +10%。', cost: 300, minRealm: 0, minSubLevel: 1, bonuses: { hpMult: 0.20, defMult: 0.10 } },
+  { id: 'tech_sword_heart', name: '一念剑心诀', desc: '攻击 +20%。', cost: 600, minRealm: 1, minSubLevel: 1, bonuses: { atkMult: 0.20 } },
+];
+
+CULT.TECHNIQUE_NAME_POOLS = {
+  minor: ['养气诀', '炼骨诀', '聚灵诀', '固元诀', '导息诀', '凝神诀', '行气诀', '守一诀', '归真诀', '清心诀', '藏锋诀', '纳息诀'],
+  major: ['天罡诀', '紫霄诀', '太一诀', '混元诀', '九转诀', '轮回诀', '造化诀', '大道诀'],
+};
+CULT.TECHNIQUE_STAT_CYCLE = ['atkMult', 'defMult', 'hpMult', 'spdMult', 'cultivationSpeedMult'];
+CULT.TECHNIQUE_STAT_LABELS = { atkMult: '攻击', defMult: '防御', hpMult: '气血', spdMult: '速度', cultivationSpeedMult: '修炼速度' };
+
+// 按境界现场生成功法目录：每3个全局小层解锁1个普通功法，每跨1个大境界（不含练气境自己）解锁1个更强的大境界功法
+CULT.generateTechniques = function () {
+  const generated = [...CULT.TECHNIQUES_BASE];
+  let minorCount = 0;
+  let majorCount = 0;
+  let globalLevelsReached = 0;
+  for (let realmId = 0; realmId < CULT.REALMS.length; realmId++) {
+    const subLevels = CULT.REALMS[realmId].subLevels;
+    if (realmId > 0) {
+      const realmCostBase = CULT.TUNING.techniqueMinorBaseCost * Math.pow(CULT.TUNING.techniqueRealmCostGrowth, realmId);
+      const stat = CULT.TECHNIQUE_STAT_CYCLE[majorCount % CULT.TECHNIQUE_STAT_CYCLE.length];
+      const bonusValue = Math.round((0.3 + majorCount * 0.05) * 100) / 100;
+      generated.push({
+        id: `tech_major_${realmId}`,
+        name: CULT.TECHNIQUE_NAME_POOLS.major[majorCount % CULT.TECHNIQUE_NAME_POOLS.major.length],
+        desc: `${CULT.TECHNIQUE_STAT_LABELS[stat]} +${Math.round(bonusValue * 100)}%。`,
+        cost: Math.floor(realmCostBase * CULT.TUNING.techniqueMajorCostMultOfMinor),
+        minRealm: realmId,
+        minSubLevel: 1,
+        bonuses: { [stat]: bonusValue },
+      });
+      majorCount++;
+    }
+    for (let subLevel = 1; subLevel <= subLevels; subLevel++) {
+      globalLevelsReached++;
+      if (globalLevelsReached % CULT.TUNING.techniqueMinorUnlockEveryLevels !== 0) continue;
+      const realmCostBase = CULT.TUNING.techniqueMinorBaseCost * Math.pow(CULT.TUNING.techniqueRealmCostGrowth, realmId);
+      const stat = CULT.TECHNIQUE_STAT_CYCLE[minorCount % CULT.TECHNIQUE_STAT_CYCLE.length];
+      const bonusValue = Math.round((0.08 + Math.floor(minorCount / CULT.TECHNIQUE_STAT_CYCLE.length) * 0.02) * 100) / 100;
+      generated.push({
+        id: `tech_minor_${realmId}_${subLevel}`,
+        name: CULT.TECHNIQUE_NAME_POOLS.minor[minorCount % CULT.TECHNIQUE_NAME_POOLS.minor.length],
+        desc: `${CULT.TECHNIQUE_STAT_LABELS[stat]} +${Math.round(bonusValue * 100)}%。`,
+        cost: Math.floor(realmCostBase * (1 + (minorCount % 3) * 0.3)),
+        minRealm: realmId,
+        minSubLevel: subLevel,
+        bonuses: { [stat]: bonusValue },
+      });
+      minorCount++;
+    }
+  }
+  return generated;
+};
+
+CULT.TECHNIQUES = CULT.generateTechniques();
+
+// 属性说明文字，供悬浮提示使用
+CULT.STAT_DESCRIPTIONS = {
+  hp: '气血上限：降到0会被打败，需要闭关疗养才能恢复。',
+  atk: '攻击：每回合对怪物造成的伤害，越高越快击杀怪物。',
+  def: '防御：抵消怪物对你的伤害，越高受到的伤害越低。',
+  spd: '速度：影响装备加成，目前主要作为综合战力参考。',
+  cultivationSpeedMult: '修炼速度：影响每秒获得修为的数量，越高突破越快。',
+};
+
+CULT.Data = {
+  getRealm(realmId) {
+    return CULT.REALMS[realmId];
+  },
+
+  getMaxSubLevel(realmId) {
+    return CULT.Data.getRealm(realmId).subLevels;
+  },
+
+  // 某个境界解锁的2张地图，按 境界+类型 组合生成，不需要逐个手写
+  getMapsForRealm(realmId) {
+    const realm = CULT.Data.getRealm(realmId);
+    return CULT.MAP_TYPES.map((t) => ({
+      id: `map_${realmId}_${t.id}`,
+      realmId,
+      typeId: t.id,
+      name: `${realm.name}·${t.name}`,
+      desc: t.desc,
+    }));
+  },
+
+  // 玩家当前已解锁的所有地图（当前境界 + 之前所有境界，可以回头刷低境界地图）
+  getAllUnlockedMaps(state) {
+    const maps = [];
+    for (let realmId = 0; realmId <= state.character.realmId; realmId++) {
+      maps.push(...CULT.Data.getMapsForRealm(realmId));
+    }
+    return maps;
+  },
+
+  getMap(mapId) {
+    if (!mapId) return null;
+    const match = /^map_(\d+)_(\w+)$/.exec(mapId);
+    if (!match) return null;
+    const realmId = Number(match[1]);
+    const typeId = match[2];
+    const type = CULT.MAP_TYPES.find((t) => t.id === typeId);
+    if (!type) return null;
+    const realm = CULT.Data.getRealm(realmId);
+    if (!realm) return null;
+    return { id: mapId, realmId, typeId, name: `${realm.name}·${type.name}`, desc: type.desc };
+  },
+
+  // category: 'equipment' | 'material' | 'fabao' | 'pet'；mapId 为空（尚未选择地图）时按 1 倍不做任何调整
+  getMapLootMultiplier(mapId, category) {
+    const match = /^map_\d+_(\w+)$/.exec(mapId || '');
+    if (!match) return 1;
+    const type = CULT.MAP_TYPES.find((t) => t.id === match[1]);
+    if (!type) return 1;
+    const key = { equipment: 'equipMult', material: 'materialMult', fabao: 'fabaoMult', pet: 'petMult' }[category];
+    return type[key] || 1;
+  },
+
+  isMaxRealm(realmId) {
+    return realmId >= CULT.REALMS.length - 1;
+  },
+
+  // 修为达到这个大境界某一小层所需的阈值
+  getExpThreshold(realmId, subLevel) {
+    const realm = CULT.Data.getRealm(realmId);
+    return Math.floor(realm.baseExpToNext * Math.pow(realm.growth, subLevel - 1));
+  },
+
+  // 全局层数索引（跨境界累计），用于属性成长曲线
+  getGlobalLevelIndex(realmId, subLevel) {
+    let index = 0;
+    for (let i = 0; i < realmId; i++) {
+      index += CULT.REALMS[i].subLevels;
+    }
+    return index + (subLevel - 1);
+  },
+
+  getBaseStats(realmId, subLevel) {
+    const idx = CULT.Data.getGlobalLevelIndex(realmId, subLevel);
+    const growth = Math.pow(CULT.TUNING.statGrowthPerLevel, idx);
+    const base = CULT.TUNING.baseStats;
+    return {
+      hp: Math.floor(base.hp * growth),
+      atk: Math.floor(base.atk * growth),
+      def: Math.floor(base.def * growth),
+      spd: Math.floor(base.spd * growth),
+    };
+  },
+
+  // 纯函数，不碰 state：按部位+怪物等级现场生成一件装备的属性快照
+  // 返回的 bonuses 都是 xxxMult 百分比，和法宝、功法用同一套加成体系
+  generateEquipmentStats(slot, monsterLevel) {
+    const focusStats = CULT.TUNING.equipmentSlotStatFocus[slot] || ['atk'];
+    const rarity = CULT.utils.weightedPick(CULT.EQUIPMENT_RARITIES, (r) => r.weight);
+    const pctPerStat = (CULT.TUNING.equipmentBaseBonusPct + monsterLevel * CULT.TUNING.equipmentLevelBonusPct)
+      * rarity.mult / focusStats.length;
+    const bonuses = {};
+    for (const stat of focusStats) {
+      bonuses[`${stat}Mult`] = Math.round(pctPerStat * 10000) / 10000;
+    }
+    const namePool = CULT.EQUIPMENT_NAME_POOL[slot] || ['神秘装备'];
+    const name = `${rarity.name}${CULT.utils.pick(namePool)}`;
+    return { slot, level: monsterLevel, rarity: rarity.id, bonuses, name };
+  },
+
+  getConsumable(id) {
+    return CULT.CONSUMABLES.find((c) => c.id === id);
+  },
+
+  getTechnique(id) {
+    return CULT.TECHNIQUES.find((t) => t.id === id);
+  },
+
+  // 功法是否已经解锁（按全局小层数比较，不只是看大境界，因为普通功法是按小层解锁的）
+  isTechniqueUnlocked(state, tech) {
+    const requiredIdx = CULT.Data.getGlobalLevelIndex(tech.minRealm, tech.minSubLevel || 1);
+    const currentIdx = CULT.Data.getGlobalLevelIndex(state.character.realmId, state.character.subLevel);
+    return currentIdx >= requiredIdx;
+  },
+
+  // 升级花费 = 修习花费 * 1.5^当前等级，随等级递增
+  getTechniqueUpgradeCost(tech, level) {
+    return Math.floor(tech.cost * Math.pow(CULT.TUNING.techniqueLevelCostGrowth, level));
+  },
+
+  getEligibleMonsters(realmId) {
+    const window = CULT.TUNING.monsterRealmWindowBehind;
+    return CULT.MONSTERS.filter(
+      (m) => m.minRealm <= realmId && m.minRealm >= realmId - window
+    );
+  },
+
+  getFabao(id) {
+    return CULT.FABAO.find((f) => f.id === id);
+  },
+
+  getPetSpecies(id) {
+    return CULT.PET_SPECIES.find((p) => p.id === id);
+  },
+
+  // 宠物实例 -> 类型定义；旧存档/未知种类兜底为陆地
+  getPetType(pet) {
+    const species = CULT.Data.getPetSpecies(pet.speciesId);
+    const typeId = species ? species.type : 'land';
+    return CULT.PET_TYPES.find((t) => t.id === typeId) || CULT.PET_TYPES[0];
+  },
+
+  // 按等级从高到低找到第一个满足 minLevel 的阶段（数组本身按等级升序排列）
+  getPetStage(level) {
+    let stage = CULT.PET_STAGES[0];
+    for (const s of CULT.PET_STAGES) {
+      if (level >= s.minLevel) stage = s;
+    }
+    return stage;
+  },
+
+  getPetExpThreshold(level) {
+    return Math.floor(CULT.TUNING.petExpBaseThreshold * Math.pow(CULT.TUNING.petExpGrowth, level - 1));
+  },
+
+  getMaterial(id) {
+    return CULT.MATERIALS.find((m) => m.id === id);
+  },
+
+  // 哪些怪物会掉落这个材料，供炼丹页悬浮提示用；按怪物在 CULT.MONSTERS 里的出场顺序返回名字列表
+  getMaterialSources(matId) {
+    return CULT.MONSTERS
+      .filter((m) => (m.loot.materials || []).some((mat) => mat.id === matId))
+      .map((m) => m.name);
+  },
+
+  getRecipe(id) {
+    return CULT.RECIPES.find((r) => r.id === id);
+  },
+
+  // 怪物等级：用于装备/宠物掉落强度计算，不影响 instantiateMonster 里的实际战斗数值
+  // overrideRealmId 可选，供秘境挑战按选定的境界（而不是玩家自己的境界）算掉落等级
+  getMonsterLevel(state, tier, overrideRealmId) {
+    const realmId = overrideRealmId != null ? overrideRealmId : state.character.realmId;
+    const subLevel = overrideRealmId != null ? CULT.Data.getMaxSubLevel(overrideRealmId) : state.character.subLevel;
+    const idx = CULT.Data.getGlobalLevelIndex(realmId, subLevel);
+    const offset = CULT.TUNING.monsterTierLevelOffset[tier] || 0;
+    return Math.max(1, idx + 1 + offset);
+  },
+
+  rollPetQuality() {
+    return CULT.utils.weightedPick(CULT.PET_QUALITIES, (q) => q.weight);
+  },
+
+  getPetQuality(id) {
+    return CULT.PET_QUALITIES.find((q) => q.id === id) || CULT.PET_QUALITIES[0];
+  },
+
+  getEliteChallengeCost(realmId) {
+    return Math.floor(CULT.TUNING.eliteChallengeBaseCost * Math.pow(CULT.TUNING.eliteChallengeCostGrowth, realmId));
+  },
+
+  // tier: 'elite' | 'demonlord'，魔王秘境在精英秘境花费基础上再乘一个倍率
+  getSanctumCost(realmId, tier) {
+    const base = CULT.Data.getEliteChallengeCost(realmId);
+    return tier === 'demonlord' ? Math.floor(base * CULT.TUNING.demonLordCostMult) : base;
+  },
+
+  getSanctumExtraMult(tier) {
+    return tier === 'demonlord' ? CULT.TUNING.demonLordExtraMult : CULT.TUNING.eliteChallengeExtraMult;
+  },
+
+  rollWeightedFabao(biasRare) {
+    const weights = biasRare ? { common: 15, uncommon: 30, rare: 35, epic: 20 } : { common: 50, uncommon: 25, rare: 15, epic: 4 };
+    return CULT.utils.weightedPick(CULT.FABAO, (f) => weights[f.rarity] || 1);
+  },
+
+  // 商店买入价：法宝/材料按稀有度定价，丹药用固定 price 字段。装备不再上架商店，靠掉落获得
+  getShopBuyPrice(itemId) {
+    if (itemId.startsWith('fabao_')) {
+      return CULT.TUNING.rarityBasePrice[CULT.Data.getFabao(itemId).rarity] * 5;
+    }
+    if (itemId.startsWith('pill_')) {
+      return CULT.Data.getConsumable(itemId).price;
+    }
+    const material = CULT.Data.getMaterial(itemId);
+    return CULT.TUNING.rarityBasePrice[material ? material.rarity : 'common'];
+  },
+
+  getShopSellPrice(itemId) {
+    return Math.max(1, Math.floor(CULT.Data.getShopBuyPrice(itemId) * CULT.TUNING.shopSellRateOfBuyPrice));
+  },
+
+  // 装备的出售价格：不再走商店目录，直接按这件实例自己的稀有度+等级算
+  getEquipmentSellPrice(instance) {
+    const rarity = CULT.EQUIPMENT_RARITIES.find((r) => r.id === instance.rarity) || CULT.EQUIPMENT_RARITIES[0];
+    const base = 15 * rarity.mult * (1 + instance.level * 0.08);
+    return Math.max(1, Math.floor(base));
+  },
+
+  // 随机生成一批商店商品：法宝/丹药/材料混合池（装备不再上架，只能靠掉落获得）
+  generateShopStock(state) {
+    const pool = [
+      ...CULT.FABAO.map((f) => ({ itemId: f.id, qty: 1 })),
+      ...CULT.CONSUMABLES.map((c) => ({ itemId: c.id, qty: CULT.utils.randInt(3, 5) })),
+      ...CULT.MATERIALS.map((m) => ({ itemId: m.id, qty: CULT.utils.randInt(3, 6) })),
+    ];
+    const stock = [];
+    const usedIndexes = new Set();
+    const stockSize = Math.min(CULT.TUNING.shopStockSize, pool.length);
+    while (stock.length < stockSize) {
+      const idx = Math.floor(Math.random() * pool.length);
+      if (usedIndexes.has(idx)) continue;
+      usedIndexes.add(idx);
+      stock.push(pool[idx]);
+    }
+    return stock;
+  },
+};

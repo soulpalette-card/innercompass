@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>灵墟问道 - 修仙挂机</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="min-h-screen bg-[#0b1020] text-slate-100">
+
+<header class="sticky top-0 z-40 bg-[#0b1020]/95 backdrop-blur border-b border-slate-800 header-ink">
+  <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between relative">
+    <h1 class="font-serif-sc text-lg font-bold text-amber-300 flex items-center gap-2">
+      <span id="header-taiji" class="header-taiji-icon"></span>
+      灵墟问道
+    </h1>
+    <div class="flex items-center gap-1.5 text-sm text-amber-200">
+      <span class="stone-icon">◆</span>
+      <span id="header-spirit-stones">0</span>
+      <span class="text-slate-400">灵石</span>
+    </div>
+  </div>
+  <nav class="max-w-3xl mx-auto px-4 pb-2 flex gap-2 text-sm overflow-x-auto">
+    <button class="nav-btn" data-screen="main-screen">主界面</button>
+    <button class="nav-btn" data-screen="character-screen">角色</button>
+    <button class="nav-btn" data-screen="inventory-screen">背包</button>
+    <button class="nav-btn" data-screen="techniques-screen">功法</button>
+    <button class="nav-btn" data-screen="fabao-screen">法宝</button>
+    <button class="nav-btn" data-screen="pets-screen">宠物</button>
+    <button class="nav-btn" data-screen="shop-screen">商店</button>
+    <button class="nav-btn" data-screen="alchemy-screen">炼丹</button>
+    <button class="nav-btn" data-screen="map-screen">地图</button>
+    <button class="nav-btn" data-screen="elite-screen">秘境</button>
+    <button class="nav-btn" data-screen="settings-screen">设置</button>
+  </nav>
+</header>
+
+<main class="max-w-3xl mx-auto px-4 py-5 pb-16">
+
+  <!-- 主界面 -->
+  <section id="main-screen" class="screen space-y-4">
+    <div class="panel panel-ornate">
+      <div class="flex items-baseline justify-between">
+        <div class="flex items-center gap-2">
+          <span id="realm-icon" class="realm-icon"></span>
+          <span id="realm-name" class="font-serif-sc text-2xl font-bold text-amber-300">练气</span>
+          <span id="sub-level" class="ml-1 text-slate-400">第1层</span>
+        </div>
+        <span class="text-xs text-slate-500">修为</span>
+      </div>
+      <div id="current-map-text" class="text-xs text-slate-500 mt-1"></div>
+      <div class="progress-track mt-2">
+        <div id="cultivation-bar" class="progress-fill bg-gradient-to-r from-amber-500 to-amber-300" style="width:0%"></div>
+      </div>
+      <div class="mt-1 text-xs text-slate-400 flex justify-between">
+        <span id="cultivation-text">0 / 0</span>
+        <span id="cultivation-rate">+0/秒</span>
+      </div>
+      <button id="breakthrough-btn" class="mt-3 w-full btn-primary" disabled>突破 (未达到条件)</button>
+    </div>
+
+    <div class="panel">
+      <div class="flex items-center justify-between text-sm mb-1">
+        <span class="text-slate-400">气血</span>
+        <span id="hp-text">0 / 0</span>
+      </div>
+      <div class="progress-track">
+        <div id="hp-bar" class="progress-fill bg-gradient-to-r from-rose-600 to-rose-400" style="width:100%"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="grid grid-cols-4 gap-2 text-center text-xs">
+        <div><div id="main-stat-label-hp" class="text-slate-500">气血</div><div id="main-stat-hp" class="mt-0.5 font-medium"></div></div>
+        <div><div id="main-stat-label-atk" class="text-slate-500">攻击</div><div id="main-stat-atk" class="mt-0.5 font-medium"></div></div>
+        <div><div id="main-stat-label-def" class="text-slate-500">防御</div><div id="main-stat-def" class="mt-0.5 font-medium"></div></div>
+        <div><div id="main-stat-label-spd" class="text-slate-500">速度</div><div id="main-stat-spd" class="mt-0.5 font-medium"></div></div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 text-center text-xs mt-3 pt-3 border-t border-slate-800">
+        <div><div class="text-slate-500">综合战力</div><div id="main-combat-power" class="mt-0.5 font-medium text-amber-300"></div></div>
+        <div><div class="text-slate-500">已修习功法</div><div id="main-tech-summary" class="mt-0.5 font-medium"></div></div>
+        <div><div class="text-slate-500">法宝点数</div><div id="main-fabao-points" class="mt-0.5 font-medium"></div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="text-xs text-slate-500 mb-2">出战宠物</div>
+      <div id="main-pet-chips" class="flex gap-2 text-xs"></div>
+    </div>
+
+    <div class="panel">
+      <div class="text-xs text-slate-500 mb-2">已装备法宝</div>
+      <div id="main-fabao-chips" class="flex gap-2 text-xs"></div>
+    </div>
+
+    <div class="panel">
+      <div id="monster-idle" class="text-slate-400 text-sm flex items-center gap-2">
+        <span class="idle-pulse">◌</span> 正在寻找妖兽的踪迹...
+      </div>
+      <div id="monster-panel" class="hidden flex gap-3 items-start">
+        <div id="monster-aura-slot" class="shrink-0"></div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span><span id="monster-tier-badge" class="tier-badge"></span> <span id="monster-name" class="font-medium"></span> <span id="monster-level" class="text-xs text-slate-400"></span></span>
+            <span id="monster-hp-text">0 / 0</span>
+          </div>
+          <div class="progress-track">
+            <div id="monster-hp-bar" class="progress-fill progress-fill-monster bg-gradient-to-r from-emerald-600 to-emerald-400" style="width:100%"></div>
+          </div>
+        </div>
+      </div>
+      <div id="rest-banner" class="hidden mt-2 text-sm text-amber-300">你受了重伤，正在闭关疗养… (<span id="rest-ticks"></span>)</div>
+    </div>
+
+    <div class="panel">
+      <div class="text-xs text-slate-500 mb-2">战斗记录</div>
+      <div id="combat-log" class="combat-log space-y-1 text-sm"></div>
+    </div>
+  </section>
+
+  <!-- 角色 -->
+  <section id="character-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">属性</h2>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div class="stat-row"><span id="stat-label-hp">气血上限</span><span id="stat-hp"></span></div>
+        <div class="stat-row"><span id="stat-label-atk">攻击</span><span id="stat-atk"></span></div>
+        <div class="stat-row"><span id="stat-label-def">防御</span><span id="stat-def"></span></div>
+        <div class="stat-row"><span id="stat-label-spd">速度</span><span id="stat-spd"></span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">已装备</h2>
+      <div id="equipped-slots" class="space-y-2"></div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-2">修炼统计</h2>
+      <div class="text-sm text-slate-400 space-y-1">
+        <div>击败妖兽：<span id="stat-battles-won">0</span></div>
+        <div>突破成功：<span id="stat-breakthroughs">0</span></div>
+        <div>突破失败：<span id="stat-breakthrough-fails">0</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 背包 -->
+  <section id="inventory-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">装备</h2>
+      <div id="inventory-equipment" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm"></div>
+      <div id="inventory-equipment-empty" class="text-slate-500 text-sm hidden">暂无装备</div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">丹药</h2>
+      <div id="inventory-consumables" class="space-y-2 text-sm"></div>
+      <div id="inventory-consumables-empty" class="text-slate-500 text-sm hidden">暂无丹药</div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">炼制材料</h2>
+      <div id="inventory-materials" class="text-sm text-slate-400 space-y-1"></div>
+      <div id="inventory-materials-empty" class="text-slate-500 text-sm hidden">暂无材料</div>
+    </div>
+  </section>
+
+  <!-- 功法 -->
+  <section id="techniques-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">功法</h2>
+      <div id="techniques-list" class="space-y-2 text-sm"></div>
+    </div>
+  </section>
+
+  <!-- 法宝 -->
+  <section id="fabao-screen" class="screen space-y-4" style="display:none">
+    <div class="panel flex items-center justify-between text-sm">
+      <span class="text-slate-400">法宝点数（分解法宝获得，可用于升级法宝）</span>
+      <span id="fabao-points-text" class="font-medium text-amber-300">0</span>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">法宝槽位</h2>
+      <div id="fabao-slots" class="space-y-2"></div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">未装备法宝</h2>
+      <p class="text-xs text-slate-500 mb-2">分解法宝可换回法宝点数（已升级的法宝分解会把投入的点数全部退还）；点数可以用来升级其他法宝，最高10级。</p>
+      <div id="fabao-inventory" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm"></div>
+      <div id="fabao-inventory-empty" class="text-slate-500 text-sm hidden">暂无法宝</div>
+    </div>
+  </section>
+
+  <!-- 宠物 -->
+  <section id="pets-screen" class="screen space-y-4" style="display:none">
+    <div class="panel panel-ornate">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">出战宠物（最多3只）</h2>
+      <div id="pet-active-slots" class="space-y-2"></div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">宠物图鉴</h2>
+      <div id="pets-roster" class="space-y-2 text-sm"></div>
+      <div id="pets-roster-empty" class="text-slate-500 text-sm hidden">尚未捕获任何宠物，击败妖兽时有几率捕获。</div>
+    </div>
+    <div class="panel">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-serif-sc text-lg text-amber-300">宠物融合</h2>
+        <span id="fusion-preview" class="text-xs text-slate-400"></span>
+      </div>
+      <p class="text-xs text-slate-500 mb-2">勾选要献祭的宠物（出战中的宠物需先下场），选择一只目标宠物接收经验。</p>
+      <button id="fusion-confirm-btn" class="btn-danger w-full" disabled>融合</button>
+    </div>
+  </section>
+
+  <!-- 商店 -->
+  <section id="shop-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-serif-sc text-lg text-amber-300">商店</h2>
+        <button id="shop-refresh-btn" class="btn-secondary text-xs px-3 py-1.5">刷新商店</button>
+      </div>
+      <div id="shop-stock" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm"></div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">出售物品</h2>
+      <div id="shop-sell-list" class="space-y-2 text-sm"></div>
+      <div id="shop-sell-empty" class="text-slate-500 text-sm hidden">暂无可出售的物品</div>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">出售装备</h2>
+      <p class="text-xs text-slate-500 mb-2">装备不再上架购买，只能靠打怪掉落获得；这里只能出售尚未装备的。</p>
+      <div id="shop-sell-equipment" class="space-y-2 text-sm"></div>
+      <div id="shop-sell-equipment-empty" class="text-slate-500 text-sm hidden">暂无可出售的装备</div>
+    </div>
+  </section>
+
+  <!-- 炼丹 -->
+  <section id="alchemy-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">炼丹配方</h2>
+      <div id="alchemy-recipes" class="space-y-2 text-sm"></div>
+    </div>
+  </section>
+
+  <!-- 地图 -->
+  <section id="map-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-2">地图选择</h2>
+      <p class="text-xs text-slate-500 mb-3">每个境界解锁2张地图，怪物强度相同，只是掉落侧重不同；可自由切换，之前境界的地图也能回去刷。</p>
+      <div id="map-list" class="space-y-2 text-sm"></div>
+    </div>
+  </section>
+
+  <!-- 秘境（精英/魔王挑战） -->
+  <section id="elite-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-2">挑战境界</h2>
+      <p class="text-xs text-slate-500 mb-3">选择要挑战哪个境界的秘境，不必先达到该境界——是否挑战更高境界，自行判断实力。</p>
+      <div id="sanctum-realm-list" class="space-y-1.5 text-sm"></div>
+    </div>
+    <div class="panel panel-ornate text-center">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-2">精英秘境</h2>
+      <p class="text-sm text-slate-400 mb-1">挑战强化妖兽，通关必得法宝。</p>
+      <p class="text-xs text-slate-600 mb-1">如当前有战斗进行中，将自动暂停并在挑战结束后继续。</p>
+      <p id="sanctum-cost-text-elite" class="text-xs text-slate-500 mb-4"></p>
+      <button id="sanctum-challenge-btn-elite" class="btn-primary w-full">挑战</button>
+    </div>
+    <div class="panel panel-ornate text-center">
+      <h2 class="font-serif-sc text-lg text-rose-300 mb-2">魔王秘境</h2>
+      <p class="text-sm text-slate-400 mb-1">挑战比精英秘境更强大的魔王，花费更高，法宝奖励也更丰厚。</p>
+      <p class="text-xs text-slate-600 mb-1">如当前有战斗进行中，将自动暂停并在挑战结束后继续。</p>
+      <p id="sanctum-cost-text-demonlord" class="text-xs text-slate-500 mb-4"></p>
+      <button id="sanctum-challenge-btn-demonlord" class="btn-danger w-full">挑战</button>
+    </div>
+  </section>
+
+  <!-- 设置 -->
+  <section id="settings-screen" class="screen space-y-4" style="display:none">
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">游戏设置</h2>
+      <label class="flex items-center justify-between text-sm">
+        <span>自动突破（每达到条件立即尝试突破）</span>
+        <input id="auto-breakthrough-toggle" type="checkbox" class="w-5 h-5" />
+      </label>
+    </div>
+    <div class="panel">
+      <h2 class="font-serif-sc text-lg text-amber-300 mb-3">存档管理</h2>
+      <button id="export-save-btn" class="btn-secondary w-full mb-2">导出存档</button>
+      <textarea id="export-save-box" readonly class="save-textarea" placeholder="点击“导出存档”生成内容"></textarea>
+      <div class="mt-4">
+        <textarea id="import-save-box" class="save-textarea" placeholder="粘贴存档 JSON 到这里"></textarea>
+        <button id="import-save-btn" class="btn-secondary w-full mt-2">导入存档</button>
+      </div>
+      <button id="reset-save-btn" class="btn-danger w-full mt-4">重置存档</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- 突破弹窗 -->
+<div id="breakthrough-modal" class="modal-overlay hidden">
+  <div class="modal-box text-center">
+    <h3 class="font-serif-sc text-xl text-amber-300 mb-4">突破</h3>
+    <div class="card-container mx-auto" id="breakthrough-card">
+      <div class="card-inner">
+        <div class="card-front flex items-center justify-center bg-slate-800 border border-amber-500/40">
+          <span id="breakthrough-front-icon" class="w-16 h-16 text-amber-300 taiji-spin"></span>
+        </div>
+        <div class="card-back flex items-center justify-center relative overflow-hidden" id="breakthrough-result-face">
+          <div id="breakthrough-particles" class="particle-layer"></div>
+          <span id="breakthrough-result-text" class="text-lg font-bold relative z-10"></span>
+        </div>
+      </div>
+    </div>
+    <p id="breakthrough-chance-text" class="text-sm text-slate-400 mt-4"></p>
+    <div class="flex gap-2 mt-4">
+      <button id="breakthrough-confirm-btn" class="btn-primary flex-1">尝试突破</button>
+      <button id="breakthrough-close-btn" class="btn-secondary flex-1 hidden">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 掉落弹窗 -->
+<div id="loot-modal" class="modal-overlay hidden">
+  <div class="modal-box text-center">
+    <h3 id="loot-modal-title" class="font-serif-sc text-xl text-amber-300 mb-4">珍稀掉落</h3>
+    <div class="card-container mx-auto flipped">
+      <div class="card-inner">
+        <div class="card-front"></div>
+        <div class="card-back flex flex-col items-center justify-center bg-gradient-to-br from-amber-600 to-amber-300 text-slate-900">
+          <span id="loot-item-icon" class="w-10 h-10 mb-2"></span>
+          <span id="loot-item-name" class="font-bold"></span>
+        </div>
+      </div>
+    </div>
+    <button id="loot-close-btn" class="btn-primary w-full mt-4">收下</button>
+  </div>
+</div>
+
+<!-- 离线收益弹窗 -->
+<div id="offline-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h3 class="font-serif-sc text-xl text-amber-300 mb-3 text-center">离线收益</h3>
+    <p class="text-sm text-slate-400 text-center mb-4">你离开了 <span id="offline-duration"></span></p>
+    <div class="space-y-1.5 text-sm">
+      <div class="stat-row"><span>获得修为</span><span id="offline-cultivation"></span></div>
+      <div class="stat-row"><span>获得灵石</span><span id="offline-stones"></span></div>
+      <div class="stat-row"><span>击败妖兽</span><span id="offline-kills"></span></div>
+      <div class="stat-row"><span>获得装备</span><span id="offline-equipment"></span></div>
+      <div class="stat-row"><span>获得法宝</span><span id="offline-fabao"></span></div>
+      <div class="stat-row"><span>捕获宠物</span><span id="offline-pets"></span></div>
+      <div class="stat-row"><span>离线突破</span><span id="offline-breakthroughs"></span></div>
+    </div>
+    <button id="offline-close-btn" class="btn-primary w-full mt-4">收下收益</button>
+  </div>
+</div>
+
+<script src="js/namespace.js"></script>
+<script src="js/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/state.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/offline.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

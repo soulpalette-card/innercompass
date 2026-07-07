@@ -1,0 +1,1031 @@
+CULT.UI = {
+  currentScreen: 'main-screen',
+  lootQueue: [],
+  lootModalOpen: false,
+
+  el(id) {
+    return document.getElementById(id);
+  },
+
+  init() {
+    document.querySelectorAll('.nav-btn').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.UI.showScreen(btn.dataset.screen));
+    });
+    CULT.UI.showScreen('main-screen');
+
+    CULT.UI.el('header-taiji').innerHTML = CULT.Icons.taiji();
+    CULT.UI.el('realm-icon').innerHTML = CULT.Icons.taiji();
+    CULT.UI.el('breakthrough-front-icon').innerHTML = CULT.Icons.taiji();
+
+    CULT.UI.el('breakthrough-btn').addEventListener('click', CULT.UI.openBreakthroughModal);
+    CULT.UI.el('breakthrough-confirm-btn').addEventListener('click', CULT.UI.confirmBreakthrough);
+    CULT.UI.el('breakthrough-close-btn').addEventListener('click', CULT.UI.closeBreakthroughModal);
+    CULT.UI.el('loot-close-btn').addEventListener('click', CULT.UI.closeLootModal);
+    CULT.UI.el('offline-close-btn').addEventListener('click', CULT.UI.closeOfflineModal);
+
+    CULT.UI.el('auto-breakthrough-toggle').addEventListener('change', (e) => {
+      CULT.Game.setAutoBreakthrough(e.target.checked);
+    });
+    CULT.UI.el('export-save-btn').addEventListener('click', CULT.UI.handleExport);
+    CULT.UI.el('import-save-btn').addEventListener('click', CULT.UI.handleImport);
+    CULT.UI.el('reset-save-btn').addEventListener('click', CULT.UI.handleReset);
+
+    CULT.UI.el('shop-refresh-btn').addEventListener('click', CULT.Game.refreshShop);
+    for (const tier of ['elite', 'demonlord']) {
+      CULT.UI.el(`sanctum-challenge-btn-${tier}`).addEventListener('click', () => {
+        const state = CULT.Game.state;
+        const realmId = state.selectedSanctumRealmId != null ? state.selectedSanctumRealmId : state.character.realmId;
+        if (CULT.Game.startSanctumChallenge(tier, realmId)) CULT.UI.showScreen('main-screen');
+      });
+    }
+
+    CULT.UI.el('fusion-confirm-btn').addEventListener('click', () => {
+      const sel = CULT.UI.fusionSelection;
+      if (!confirm(`确定要献祭 ${sel.sacrificeIds.length} 只宠物进行融合吗？此操作不可撤销。`)) return;
+      const result = CULT.Game.fusePets(sel.sacrificeIds, sel.targetId);
+      if (result) {
+        sel.sacrificeIds = [];
+        sel.targetId = null;
+      }
+    });
+
+    CULT.UI.applyStatTooltips();
+  },
+
+  // 静态属性标签（角色页 + 主界面）只需要在启动时贴一次悬浮提示，不必每次 refresh 都重来
+  applyStatTooltips() {
+    for (const [stat, desc] of Object.entries(CULT.STAT_DESCRIPTIONS)) {
+      for (const prefix of ['stat-label-', 'main-stat-label-']) {
+        const el = CULT.UI.el(`${prefix}${stat}`);
+        if (!el) continue;
+        el.classList.add('tooltip');
+        el.dataset.tip = desc;
+      }
+    }
+  },
+
+  showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach((s) => {
+      s.style.display = 'none';
+    });
+    const target = CULT.UI.el(screenId);
+    if (target) target.style.display = 'block';
+    CULT.UI.currentScreen = screenId;
+
+    document.querySelectorAll('.nav-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.screen === screenId);
+    });
+  },
+
+  refresh(state) {
+    CULT.UI.el('header-spirit-stones').textContent = CULT.utils.formatNumber(state.character.spiritStones);
+    CULT.UI.renderMain(state);
+    CULT.UI.renderCharacter(state);
+    CULT.UI.renderInventory(state);
+    CULT.UI.renderTechniques(state);
+    CULT.UI.renderMap(state);
+    CULT.UI.renderFabao(state);
+    CULT.UI.renderPets(state);
+    CULT.UI.renderShop(state);
+    CULT.UI.renderAlchemy(state);
+    CULT.UI.renderSanctums(state);
+    CULT.UI.el('auto-breakthrough-toggle').checked = !!state.settings.autoBreakthrough;
+  },
+
+  renderMain(state) {
+    const realm = CULT.Data.getRealm(state.character.realmId);
+    CULT.UI.el('realm-name').textContent = realm.name;
+    CULT.UI.el('sub-level').textContent = `第${state.character.subLevel}层`;
+
+    const currentMap = CULT.Data.getMap(state.selectedMapId);
+    CULT.UI.el('current-map-text').textContent = currentMap ? `当前地图：${currentMap.name}` : '尚未选择地图（前往"地图"页面选择）';
+
+    const info = CULT.Combat.getBreakthroughInfo(state);
+    const cultivation = state.character.cultivation;
+    if (info.isMaxRealm) {
+      CULT.UI.el('cultivation-bar').style.width = '100%';
+      CULT.UI.el('cultivation-text').textContent = `${CULT.utils.formatNumber(cultivation)} (已达巅峰)`;
+    } else {
+      const pct = CULT.utils.clamp((cultivation / info.threshold) * 100, 0, 100);
+      CULT.UI.el('cultivation-bar').style.width = `${pct}%`;
+      CULT.UI.el('cultivation-text').textContent =
+        `${CULT.utils.formatNumber(cultivation)} / ${CULT.utils.formatNumber(info.threshold)}`;
+    }
+
+    const stats = CULT.Combat.computeStats(state);
+    const rate = CULT.Combat.getCultivationPerSecond(state, stats);
+    CULT.UI.el('cultivation-rate').textContent = `+${CULT.utils.formatNumber(rate)}/秒`;
+
+    CULT.UI.el('main-stat-hp').textContent = CULT.utils.formatNumber(stats.hp);
+    CULT.UI.el('main-stat-atk').textContent = CULT.utils.formatNumber(stats.atk);
+    CULT.UI.el('main-stat-def').textContent = CULT.utils.formatNumber(stats.def);
+    CULT.UI.el('main-stat-spd').textContent = CULT.utils.formatNumber(stats.spd);
+
+    // 综合战力只是给玩家一个直观的"变强了多少"的参考数字，不参与任何实际战斗计算
+    const combatPower = Math.floor(stats.hp + stats.atk * 8 + stats.def * 5 + stats.spd * 2);
+    CULT.UI.el('main-combat-power').textContent = CULT.utils.formatNumber(combatPower);
+    const learnedTechs = Object.entries(state.techniques.learned);
+    const totalTechLevels = learnedTechs.reduce((sum, [, level]) => sum + level, 0);
+    CULT.UI.el('main-tech-summary').textContent = `${learnedTechs.length}门 (Lv合计${totalTechLevels})`;
+    CULT.UI.el('main-fabao-points').textContent = CULT.utils.formatNumber(state.character.fabaoPoints || 0);
+    CULT.UI.renderMainFabaoChips(state);
+
+    const btn = CULT.UI.el('breakthrough-btn');
+    if (info.isMaxRealm) {
+      btn.disabled = true;
+      btn.textContent = '已达巅峰境界';
+    } else if (info.eligible) {
+      btn.disabled = false;
+      btn.textContent = `突破 (成功率 ${Math.round(info.chance * 100)}%)`;
+    } else {
+      btn.disabled = true;
+      btn.textContent = '突破 (修为不足)';
+    }
+
+    CULT.UI.el('hp-text').textContent =
+      `${Math.max(0, Math.floor(state.character.hp))} / ${state.character.hpMax}`;
+    const hpPct = state.character.hpMax
+      ? CULT.utils.clamp((state.character.hp / state.character.hpMax) * 100, 0, 100)
+      : 100;
+    CULT.UI.el('hp-bar').style.width = `${hpPct}%`;
+
+    const resting = state.character.restTicksRemaining > 0;
+    CULT.UI.el('rest-banner').classList.toggle('hidden', !resting);
+    if (resting) CULT.UI.el('rest-ticks').textContent = `${state.character.restTicksRemaining}秒`;
+
+    const hasMonster = !!state.combat.currentMonsterId && !resting;
+    CULT.UI.el('monster-idle').classList.toggle('hidden', hasMonster || resting);
+    CULT.UI.el('monster-panel').classList.toggle('hidden', !hasMonster);
+    if (hasMonster) {
+      CULT.UI.el('monster-name').textContent = state.combat.currentMonsterName;
+      const levelOverride = state.combat.isEliteChallenge ? state.combat.challengeRealmId : null;
+      CULT.UI.el('monster-level').textContent = `Lv.${CULT.Data.getMonsterLevel(state, state.combat.currentMonsterTier, levelOverride)}`;
+      const badge = CULT.UI.el('monster-tier-badge');
+      badge.textContent = { weak: '弱', normal: '普通', elite: '精英', boss: '首领' }[state.combat.currentMonsterTier] || '';
+      badge.className = `tier-badge ${state.combat.currentMonsterTier}`;
+      CULT.UI.el('monster-hp-text').textContent =
+        `${Math.max(0, state.combat.currentMonsterHp)} / ${state.combat.currentMonsterHpMax}`;
+      const monsterPct = CULT.utils.clamp(
+        (state.combat.currentMonsterHp / state.combat.currentMonsterHpMax) * 100, 0, 100
+      );
+      CULT.UI.el('monster-hp-bar').style.width = `${monsterPct}%`;
+
+      if (CULT.UI.renderedMonsterId !== state.combat.currentMonsterId) {
+        const monsterDef = CULT.MONSTERS.find((m) => m.id === state.combat.currentMonsterId);
+        CULT.UI.el('monster-aura-slot').innerHTML = CULT.Icons.monsterAura(
+          state.combat.currentMonsterTier,
+          monsterDef ? monsterDef.emoji : '?'
+        );
+        CULT.UI.renderedMonsterId = state.combat.currentMonsterId;
+      }
+    } else {
+      CULT.UI.renderedMonsterId = null;
+    }
+
+    const logEl = CULT.UI.el('combat-log');
+    logEl.innerHTML = state.combat.log
+      .slice(-12)
+      .map((entry) => `<div class="${entry.cls || ''}">${entry.text}</div>`)
+      .join('');
+    logEl.scrollTop = logEl.scrollHeight;
+
+    CULT.UI.renderMainPetChips(state);
+  },
+
+  // 主界面的紧凑宠物展示：只显示头像+名字+等级，不像宠物页那样带经验条
+  renderMainPetChips(state) {
+    const container = CULT.UI.el('main-pet-chips');
+    const activeIds = state.pets.activeIds || [];
+    if (activeIds.length === 0) {
+      container.innerHTML = `<span class="text-slate-600">暂无出战宠物</span>`;
+      return;
+    }
+    container.innerHTML = activeIds
+      .map((id) => state.pets.owned.find((p) => p.instanceId === id))
+      .filter(Boolean)
+      .map((pet) => {
+        const { species, stage } = CULT.UI.renderPetCard(pet);
+        return `<div ${CULT.UI.tooltipAttr(CULT.UI.petTooltipText(pet), 'flex items-center gap-1.5 panel !p-1.5')}>
+          <span style="font-size:1.2rem">${species ? species.emoji : '?'}</span>
+          <span>${species ? species.name : pet.speciesId} Lv.${pet.level}</span>
+        </div>`;
+      })
+      .join('');
+  },
+
+  // 主界面的紧凑法宝展示：只显示图标+名字+等级，跟法宝页的完整卡片不同
+  renderMainFabaoChips(state) {
+    const container = CULT.UI.el('main-fabao-chips');
+    const categoryLabels = { attack: '攻击', defense: '防御', boost: '增幅' };
+    const equipped = Object.entries(state.equippedFabao)
+      .map(([cat, instanceId]) => ({ cat, instance: instanceId ? state.fabao.owned.find((f) => f.instanceId === instanceId) : null }))
+      .filter((e) => e.instance);
+    if (equipped.length === 0) {
+      container.innerHTML = `<span class="text-slate-600">暂无装备法宝</span>`;
+      return;
+    }
+    container.innerHTML = equipped
+      .map(({ cat, instance }) => {
+        const fabao = CULT.Data.getFabao(instance.fabaoId);
+        return `<div ${CULT.UI.tooltipAttr(CULT.UI.fabaoTooltipText(instance), 'flex items-center gap-1.5 panel !p-1.5')}>
+          <div class="item-icon rarity-${fabao.rarity}" style="width:1.5rem;height:1.5rem">${CULT.Icons.category(cat)}</div>
+          <span>${fabao.name} Lv.${instance.level}</span>
+        </div>`;
+      })
+      .join('');
+  },
+
+  renderCharacter(state) {
+    const stats = CULT.Combat.computeStats(state);
+    CULT.UI.el('stat-hp').textContent = CULT.utils.formatNumber(stats.hp);
+    CULT.UI.el('stat-atk').textContent = CULT.utils.formatNumber(stats.atk);
+    CULT.UI.el('stat-def').textContent = CULT.utils.formatNumber(stats.def);
+    CULT.UI.el('stat-spd').textContent = CULT.utils.formatNumber(stats.spd);
+
+    const slotNames = { weapon: '武器', armor: '护甲', accessory: '饰品', boots: '鞋子', gloves: '护手' };
+    const container = CULT.UI.el('equipped-slots');
+    container.innerHTML = Object.entries(slotNames)
+      .map(([slot, label]) => {
+        const instanceId = state.equipped[slot];
+        const item = instanceId ? state.equipment.owned.find((e) => e.instanceId === instanceId) : null;
+        if (!item) {
+          return `<div class="flex items-center gap-3 text-sm">
+            <div class="item-icon">${CULT.Icons.slot(slot)}</div>
+            <span class="flex-1">${label}</span>
+            <span class="text-slate-600">未装备</span>
+          </div>`;
+        }
+        return `<div class="flex items-center gap-3 text-sm">
+          <div class="item-icon rarity-${item.rarity}">${CULT.Icons.slot(slot)}</div>
+          <div class="flex-1">
+            <div>${label}：<span ${CULT.UI.tooltipAttr(CULT.UI.equipmentTooltipText(item))}>${item.name}</span> <span class="text-xs text-slate-500">Lv.${item.level}</span></div>
+            <div class="text-xs text-slate-400">${CULT.UI.multBonusText(item)}</div>
+          </div>
+          <button class="btn-secondary text-xs px-2 py-1" data-unequip-slot="${slot}">卸下</button>
+        </div>`;
+      })
+      .join('');
+    container.querySelectorAll('[data-unequip-slot]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.unequipItem(btn.dataset.unequipSlot));
+    });
+
+    CULT.UI.el('stat-battles-won').textContent = state.stats.totalBattlesWon;
+    CULT.UI.el('stat-breakthroughs').textContent = state.stats.totalBreakthroughs;
+    CULT.UI.el('stat-breakthrough-fails').textContent = state.stats.totalBreakthroughFails;
+  },
+
+  renderInventory(state) {
+    const consumableEntries = [];
+    const materialEntries = [];
+
+    for (const [id, count] of Object.entries(state.inventory)) {
+      if (count <= 0) continue;
+      if (id.startsWith('pill_')) consumableEntries.push([id, count]);
+      else materialEntries.push([id, count]);
+    }
+
+    // 装备已经从"按ID堆叠的背包条目"变成 state.equipment.owned 里的一堆独立实例；
+    // 这里只展示还没穿上的（已装备的在角色页显示），每件都是唯一的，不再有 x{count}
+    const equippedIds = new Set(Object.values(state.equipped).filter(Boolean));
+    const unequippedGear = state.equipment.owned.filter((item) => !equippedIds.has(item.instanceId));
+
+    const eqContainer = CULT.UI.el('inventory-equipment');
+    CULT.UI.el('inventory-equipment-empty').classList.toggle('hidden', unequippedGear.length > 0);
+    eqContainer.innerHTML = unequippedGear
+      .map((item) => {
+        const bonusText = CULT.UI.multBonusText(item);
+        const deltaText = CULT.UI.formatDelta(CULT.Combat.getEquipmentDelta(state, item.instanceId), CULT.UI.MULT_STAT_LABELS, true);
+        return `<div class="panel rarity-${item.rarity} border flex gap-3 items-center">
+          <div class="item-icon rarity-${item.rarity}">${CULT.Icons.slot(item.slot)}</div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span ${CULT.UI.tooltipAttr(CULT.UI.equipmentTooltipText(item), 'font-medium')}>${item.name} <span class="text-xs text-slate-500">Lv.${item.level}</span></span>
+              <button class="btn-secondary text-xs px-2 py-1" data-equip="${item.instanceId}">装备</button>
+            </div>
+            <div class="text-xs text-slate-400 mt-1">${bonusText}</div>
+            <div class="text-xs mt-0.5">${deltaText}</div>
+          </div>
+        </div>`;
+      })
+      .join('');
+    eqContainer.querySelectorAll('[data-equip]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.equipItem(btn.dataset.equip));
+    });
+
+    const consContainer = CULT.UI.el('inventory-consumables');
+    CULT.UI.el('inventory-consumables-empty').classList.toggle('hidden', consumableEntries.length > 0);
+    consContainer.innerHTML = consumableEntries
+      .map(([id, count]) => {
+        const item = CULT.Data.getConsumable(id);
+        return `<div class="flex items-center gap-3 panel">
+          <div class="item-icon">${CULT.Icons.pill(item.type)}</div>
+          <div class="flex-1">
+            <div ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(id), 'font-medium')}>${item.name} x${count}</div>
+            <div class="text-xs text-slate-400">${item.desc}</div>
+          </div>
+          <button class="btn-secondary text-xs px-2 py-1" data-use="${id}">使用</button>
+        </div>`;
+      })
+      .join('');
+    consContainer.querySelectorAll('[data-use]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.useConsumable(btn.dataset.use));
+    });
+
+    const matContainer = CULT.UI.el('inventory-materials');
+    CULT.UI.el('inventory-materials-empty').classList.toggle('hidden', materialEntries.length > 0);
+    matContainer.innerHTML = materialEntries
+      .map(([id, count]) => `<div class="stat-row"><span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(id))}>${CULT.UI.materialLabel(id)}</span><span>x${count}</span></div>`)
+      .join('');
+  },
+
+  // "材料"泛指配方消耗的东西——炼丹材料本身，或者用于融合的丹药
+  materialLabel(id) {
+    const material = CULT.Data.getMaterial(id);
+    if (material) return material.name;
+    const consumable = CULT.Data.getConsumable(id);
+    if (consumable) return consumable.name;
+    return id;
+  },
+
+  MULT_STAT_LABELS: { hpMult: '气血', atkMult: '攻击', defMult: '防御', spdMult: '速度' },
+  RARITY_LABELS: { common: '普通', uncommon: '优良', rare: '精良', epic: '极品' },
+
+  // 生成悬浮提示所需的 class + data-tip 属性片段，可直接拼进模板字符串。
+  // extraClass 用于跟元素本来就要有的其他 class 合并成一个 class 属性（HTML 不允许重复的 class= 属性）
+  tooltipAttr(text, extraClass) {
+    const cls = extraClass ? `tooltip ${extraClass}` : 'tooltip';
+    return `class="${cls}" data-tip="${CULT.utils.escapeHtml(text)}"`;
+  },
+
+  // 根据 id 前缀生成一段物品说明文字，供悬浮提示使用（装备/法宝是实例，各自走单独的 xxxTooltipText）
+  itemTooltipText(itemId) {
+    if (itemId.startsWith('pill_')) {
+      const item = CULT.Data.getConsumable(itemId);
+      return `${item.name}：${item.desc}`;
+    }
+    const material = CULT.Data.getMaterial(itemId);
+    if (!material) return itemId;
+    const sources = CULT.Data.getMaterialSources(itemId);
+    const sourceText = sources.length > 0 ? `，来源：${sources.join('、')}` : '';
+    return `${material.name}：炼丹材料（${CULT.UI.RARITY_LABELS[material.rarity] || material.rarity}）${sourceText}`;
+  },
+
+  // 装备是实例对象，不是 id，走这个单独的分支
+  equipmentTooltipText(item) {
+    return `${item.name}（${CULT.UI.RARITY_LABELS[item.rarity] || item.rarity}）Lv.${item.level}：${CULT.UI.multBonusText(item)}`;
+  },
+
+  // 法宝也是实例对象，加成要按当前等级现算（跟基础目录的百分比不一样）
+  fabaoTooltipText(instance) {
+    const fabao = CULT.Data.getFabao(instance.fabaoId);
+    const bonusText = CULT.UI.multBonusText({ bonuses: CULT.Combat.getFabaoEffectiveBonuses(instance) });
+    return `${fabao.name}（${CULT.UI.RARITY_LABELS[fabao.rarity] || fabao.rarity}）Lv.${instance.level}：${bonusText}`;
+  },
+
+  petTooltipText(pet) {
+    const stage = CULT.Data.getPetStage(pet.level);
+    const quality = CULT.Data.getPetQuality(pet.quality);
+    const type = CULT.Data.getPetType(pet);
+    const bonus = (stage.bonusMult + (pet.level - stage.minLevel) * CULT.TUNING.petBonusPerLevel) * quality.statMult;
+    const flatCultivation = Math.floor(bonus * CULT.TUNING.petFlyingCultivationWeight * CULT.TUNING.petFlyingCultivationFlatBase * 100) / 100;
+    const effectText = {
+      land: `气血/防御 +${Math.round(bonus * CULT.TUNING.petLandStatWeight * 100)}%`,
+      flying: `修炼速度 +${flatCultivation}/秒`,
+      sea: '出战时每回合额外造成较高伤害',
+    }[type.id];
+    return `${type.name}·${stage.name}·${quality.name} Lv.${pet.level}：${effectText}`;
+  },
+
+  // 装备和法宝现在共用同一套百分比加成（xxxMult），用同一个函数格式化即可
+  multBonusText(item) {
+    return Object.entries(item.bonuses)
+      .map(([k, v]) => `${CULT.UI.MULT_STAT_LABELS[k] || k}+${Math.round(v * 100)}%`)
+      .join(' ');
+  },
+
+  // 把属性差值渲染成带颜色的 +/- 片段，isPercent 为 true 时按百分比格式化
+  formatDelta(delta, labels, isPercent) {
+    return Object.entries(delta)
+      .filter(([, v]) => v !== 0)
+      .map(([k, v]) => {
+        const cls = v > 0 ? 'text-emerald-400' : 'text-rose-400';
+        const sign = v > 0 ? '+' : '';
+        const value = isPercent ? `${sign}${Math.round(v * 100)}%` : `${sign}${v}`;
+        return `<span class="${cls}">${labels[k] || k}${value}</span>`;
+      })
+      .join(' ');
+  },
+
+  // 单张功法卡片：已修习(可升级)/未解锁/可修习 三种状态，供功法页共用
+  techniqueCardHtml(state, tech) {
+    const level = state.techniques.learned[tech.id];
+    const unlocked = CULT.Data.isTechniqueUnlocked(state, tech);
+    let actionHtml;
+    if (level) {
+      const maxed = level >= CULT.TUNING.techniqueMaxLevel;
+      if (maxed) {
+        actionHtml = `<span class="text-xs text-emerald-400">已满级 Lv.${level}</span>`;
+      } else {
+        const upgradeCost = CULT.Data.getTechniqueUpgradeCost(tech, level);
+        const canUpgrade = state.character.spiritStones >= upgradeCost;
+        actionHtml = `<div class="flex items-center gap-1.5">
+          <span class="text-xs text-emerald-400">Lv.${level}</span>
+          <button class="btn-secondary text-xs px-2 py-1" data-upgrade="${tech.id}" ${canUpgrade ? '' : 'disabled'}>升级 (${CULT.utils.formatNumber(upgradeCost)}灵石)</button>
+        </div>`;
+      }
+    } else if (!unlocked) {
+      const realmName = CULT.Data.getRealm(tech.minRealm).name;
+      const subText = tech.minSubLevel > 1 ? `第${tech.minSubLevel}层` : '';
+      actionHtml = `<span class="text-xs text-slate-500">需要${realmName}境${subText}</span>`;
+    } else {
+      const canAfford = state.character.spiritStones >= tech.cost;
+      actionHtml = `<button class="btn-secondary text-xs px-2 py-1" data-learn="${tech.id}" ${canAfford ? '' : 'disabled'}>修习 (${CULT.utils.formatNumber(tech.cost)}灵石)</button>`;
+    }
+    return `<div class="flex items-center justify-between panel">
+      <div>
+        <div class="font-medium">${tech.name}</div>
+        <div class="text-xs text-slate-400">${tech.desc}</div>
+      </div>
+      ${actionHtml}
+    </div>`;
+  },
+
+  // 渲染一份完整的功法列表到指定容器并绑定"修习"/"升级"按钮
+  renderTechniqueList(state, containerId) {
+    const container = CULT.UI.el(containerId);
+    if (!container) return;
+    container.innerHTML = CULT.TECHNIQUES.map((tech) => CULT.UI.techniqueCardHtml(state, tech)).join('');
+    container.querySelectorAll('[data-learn]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.learnTechnique(btn.dataset.learn));
+    });
+    container.querySelectorAll('[data-upgrade]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.upgradeTechnique(btn.dataset.upgrade));
+    });
+  },
+
+  renderTechniques(state) {
+    CULT.UI.renderTechniqueList(state, 'techniques-list');
+  },
+
+  renderMap(state) {
+    const container = CULT.UI.el('map-list');
+    const maps = CULT.Data.getAllUnlockedMaps(state);
+    container.innerHTML = maps.map((map) => {
+      const isCurrent = state.selectedMapId === map.id;
+      const actionHtml = isCurrent
+        ? `<span class="text-xs text-emerald-400">当前</span>`
+        : `<button class="btn-secondary text-xs px-2 py-1" data-select-map="${map.id}">切换</button>`;
+      return `<div class="flex items-center justify-between panel ${isCurrent ? 'rarity-uncommon border' : ''}">
+        <div>
+          <div class="font-medium">${map.name}</div>
+          <div class="text-xs text-slate-400">${map.desc}</div>
+        </div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+    container.querySelectorAll('[data-select-map]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.selectMap(btn.dataset.selectMap));
+    });
+  },
+
+  renderFabao(state) {
+    const categoryLabels = { attack: '攻击', defense: '防御', boost: '增幅' };
+
+    CULT.UI.el('fabao-points-text').textContent = CULT.utils.formatNumber(state.character.fabaoPoints || 0);
+
+    const slotsContainer = CULT.UI.el('fabao-slots');
+    slotsContainer.innerHTML = Object.entries(categoryLabels)
+      .map(([cat, label]) => {
+        const instanceId = state.equippedFabao[cat];
+        const instance = instanceId ? state.fabao.owned.find((f) => f.instanceId === instanceId) : null;
+        if (!instance) {
+          return `<div class="flex items-center gap-3 text-sm">
+            <div class="item-icon">${CULT.Icons.category(cat)}</div>
+            <span class="flex-1">${label}类</span>
+            <span class="text-slate-600">未装备</span>
+          </div>`;
+        }
+        const fabao = CULT.Data.getFabao(instance.fabaoId);
+        const bonusText = CULT.UI.multBonusText({ bonuses: CULT.Combat.getFabaoEffectiveBonuses(instance) });
+        return `<div class="flex items-center gap-3 text-sm">
+          <div class="item-icon rarity-${fabao.rarity}">${CULT.Icons.category(cat)}</div>
+          <div class="flex-1">
+            <div>${label}类：<span ${CULT.UI.tooltipAttr(CULT.UI.fabaoTooltipText(instance))}>${fabao.name}</span> <span class="text-xs text-slate-500">Lv.${instance.level}</span></div>
+            <div class="text-xs text-slate-400">${bonusText}</div>
+          </div>
+          <button class="btn-secondary text-xs px-2 py-1" data-unequip-fabao="${cat}">卸下</button>
+        </div>`;
+      })
+      .join('');
+    slotsContainer.querySelectorAll('[data-unequip-fabao]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.unequipFabao(btn.dataset.unequipFabao));
+    });
+
+    const equippedIds = new Set(Object.values(state.equippedFabao).filter(Boolean));
+    const unequipped = state.fabao.owned.filter((f) => !equippedIds.has(f.instanceId));
+    const invContainer = CULT.UI.el('fabao-inventory');
+    CULT.UI.el('fabao-inventory-empty').classList.toggle('hidden', unequipped.length > 0);
+    invContainer.innerHTML = unequipped
+      .map((instance) => {
+        const fabao = CULT.Data.getFabao(instance.fabaoId);
+        const bonusText = CULT.UI.multBonusText({ bonuses: CULT.Combat.getFabaoEffectiveBonuses(instance) });
+        const deltaText = CULT.UI.formatDelta(CULT.Combat.getFabaoDelta(state, instance.instanceId), CULT.UI.MULT_STAT_LABELS, true);
+        const maxed = instance.level >= CULT.TUNING.fabaoMaxLevel;
+        const upgradeCost = CULT.Combat.getFabaoUpgradeCost(instance);
+        const canUpgrade = !maxed && (state.character.fabaoPoints || 0) >= upgradeCost;
+        const upgradeLabel = maxed ? '已满级' : `升级 (${CULT.utils.formatNumber(upgradeCost)}点)`;
+        return `<div class="panel rarity-${fabao.rarity} border">
+          <div class="flex items-center justify-between">
+            <span ${CULT.UI.tooltipAttr(CULT.UI.fabaoTooltipText(instance), 'font-medium')}>${fabao.name} <span class="text-xs text-slate-500">Lv.${instance.level}</span></span>
+            <button class="btn-secondary text-xs px-2 py-1" data-equip-fabao="${instance.instanceId}">装备</button>
+          </div>
+          <div class="text-xs text-slate-400 mt-1">${bonusText}</div>
+          <div class="text-xs mt-0.5">${deltaText}</div>
+          <div class="flex items-center gap-1.5 mt-2">
+            <button class="btn-secondary text-xs px-2 py-1 flex-1" data-upgrade-fabao="${instance.instanceId}" ${canUpgrade ? '' : 'disabled'}>${upgradeLabel}</button>
+            <button class="btn-danger text-xs px-2 py-1" data-decompose-fabao="${instance.instanceId}">分解</button>
+          </div>
+        </div>`;
+      })
+      .join('');
+    invContainer.querySelectorAll('[data-equip-fabao]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.equipFabao(btn.dataset.equipFabao));
+    });
+    invContainer.querySelectorAll('[data-upgrade-fabao]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.upgradeFabao(btn.dataset.upgradeFabao));
+    });
+    invContainer.querySelectorAll('[data-decompose-fabao]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.decomposeFabao(btn.dataset.decomposeFabao));
+    });
+  },
+
+  fusionSelection: { sacrificeIds: [], targetId: null }, // UI 本地状态，不写入存档
+
+  renderPetCard(pet) {
+    const species = CULT.Data.getPetSpecies(pet.speciesId);
+    const stage = CULT.Data.getPetStage(pet.level);
+    const quality = CULT.Data.getPetQuality(pet.quality);
+    const type = CULT.Data.getPetType(pet);
+    const threshold = CULT.Data.getPetExpThreshold(pet.level);
+    const pct = CULT.utils.clamp((pet.exp / threshold) * 100, 0, 100);
+    return { species, stage, quality, type, threshold, pct };
+  },
+
+  renderPets(state) {
+    // 出战槽位：最多3个，空位显示占位卡
+    const slotsContainer = CULT.UI.el('pet-active-slots');
+    const activeIds = state.pets.activeIds || [];
+    slotsContainer.innerHTML = [0, 1, 2]
+      .map((i) => {
+        const pet = activeIds[i] ? state.pets.owned.find((p) => p.instanceId === activeIds[i]) : null;
+        if (!pet) {
+          return `<div class="flex items-center gap-3 text-sm text-slate-600 panel">
+            <div class="item-icon">?</div>
+            <span class="flex-1">空位</span>
+          </div>`;
+        }
+        const { species, stage, quality, type, threshold, pct } = CULT.UI.renderPetCard(pet);
+        return `<div class="flex gap-3 items-center panel">
+          <div class="shrink-0">${CULT.Icons.petAura(stage.id, species ? species.emoji : '?')}</div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span ${CULT.UI.tooltipAttr(CULT.UI.petTooltipText(pet), 'font-medium')}>${species ? species.name : pet.speciesId}</span>
+              <span class="flex gap-1">
+                <span class="tier-badge ${type.id}">${type.emoji}${type.name}</span>
+                <span class="tier-badge">${stage.name}</span>
+                <span class="tier-badge ${quality.id}">${quality.name}</span>
+              </span>
+            </div>
+            <div class="text-xs text-slate-400 mt-1">Lv.${pet.level}</div>
+            <div class="progress-track mt-1">
+              <div class="progress-fill bg-gradient-to-r from-purple-500 to-purple-300" style="width:${pct}%"></div>
+            </div>
+            <div class="text-xs text-slate-500 mt-0.5">${Math.floor(pet.exp)} / ${threshold}</div>
+          </div>
+          <button class="btn-secondary text-xs px-2 py-1" data-deactivate-pet="${pet.instanceId}">下场</button>
+        </div>`;
+      })
+      .join('');
+    slotsContainer.querySelectorAll('[data-deactivate-pet]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.deactivatePet(btn.dataset.deactivatePet));
+    });
+
+    // 图鉴列表：出战/下场按钮 + 融合用的勾选/目标选择
+    const sel = CULT.UI.fusionSelection;
+    // 存档变化后（比如融合执行完）清掉已经不存在的选择，避免残留幽灵 id
+    sel.sacrificeIds = sel.sacrificeIds.filter((id) => state.pets.owned.some((p) => p.instanceId === id));
+    if (sel.targetId && !state.pets.owned.some((p) => p.instanceId === sel.targetId)) sel.targetId = null;
+
+    const rosterContainer = CULT.UI.el('pets-roster');
+    CULT.UI.el('pets-roster-empty').classList.toggle('hidden', state.pets.owned.length > 0);
+    rosterContainer.innerHTML = state.pets.owned
+      .map((pet) => {
+        const { species, stage, quality, type } = CULT.UI.renderPetCard(pet);
+        const isActive = activeIds.includes(pet.instanceId);
+        const actionHtml = isActive
+          ? `<button class="btn-secondary text-xs px-2 py-1" data-deactivate-pet="${pet.instanceId}">下场</button>`
+          : `<button class="btn-secondary text-xs px-2 py-1" data-activate-pet="${pet.instanceId}" ${activeIds.length >= 3 ? 'disabled' : ''}>出战</button>`;
+        const isSacrifice = sel.sacrificeIds.includes(pet.instanceId);
+        const isTarget = sel.targetId === pet.instanceId;
+        return `<div class="panel space-y-1.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <span ${CULT.UI.tooltipAttr(CULT.UI.petTooltipText(pet), 'font-medium')}>${species ? species.name : pet.speciesId}</span>
+              <span class="tier-badge ${type.id}">${type.emoji}${type.name}</span>
+              <span class="tier-badge">${stage.name}</span>
+              <span class="tier-badge ${quality.id}">${quality.name}</span>
+              <span class="text-xs text-slate-400">Lv.${pet.level}</span>
+            </div>
+            ${actionHtml}
+          </div>
+          <div class="flex items-center gap-4 text-xs text-slate-400">
+            <label class="flex items-center gap-1.5">
+              <input type="checkbox" data-fusion-sacrifice="${pet.instanceId}" ${isSacrifice ? 'checked' : ''} ${isActive || isTarget ? 'disabled' : ''} />
+              选为材料
+            </label>
+            <label class="flex items-center gap-1.5">
+              <input type="radio" name="fusion-target" data-fusion-target="${pet.instanceId}" ${isTarget ? 'checked' : ''} ${isSacrifice ? 'disabled' : ''} />
+              设为目标
+            </label>
+          </div>
+        </div>`;
+      })
+      .join('');
+    rosterContainer.querySelectorAll('[data-activate-pet]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.activatePet(btn.dataset.activatePet));
+    });
+    rosterContainer.querySelectorAll('[data-deactivate-pet]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.deactivatePet(btn.dataset.deactivatePet));
+    });
+    rosterContainer.querySelectorAll('[data-fusion-sacrifice]').forEach((cb) => {
+      cb.addEventListener('change', (e) => {
+        const id = cb.dataset.fusionSacrifice;
+        if (e.target.checked) sel.sacrificeIds.push(id);
+        else sel.sacrificeIds = sel.sacrificeIds.filter((x) => x !== id);
+        CULT.UI.renderPets(state);
+      });
+    });
+    rosterContainer.querySelectorAll('[data-fusion-target]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        sel.targetId = radio.dataset.fusionTarget;
+        CULT.UI.renderPets(state);
+      });
+    });
+
+    // 融合预览与确认按钮
+    const sacrificePets = sel.sacrificeIds
+      .map((id) => state.pets.owned.find((p) => p.instanceId === id))
+      .filter(Boolean);
+    const previewExp = sacrificePets.reduce((sum, p) => sum + CULT.Combat.getFusionExpValue(p), 0);
+    const canFuse = sacrificePets.length > 0 && !!sel.targetId;
+    CULT.UI.el('fusion-preview').textContent = canFuse ? `预计获得经验：${previewExp}` : '';
+    const fuseBtn = CULT.UI.el('fusion-confirm-btn');
+    fuseBtn.disabled = !canFuse;
+  },
+
+  // 根据 id 前缀猜一个展示图标，商店/背包共用（装备已经不走这套id体系，见 equipmentTooltipText 等专属函数）
+  shopItemIcon(itemId) {
+    if (itemId.startsWith('fabao_')) return CULT.Icons.category(CULT.Data.getFabao(itemId).category);
+    if (itemId.startsWith('pill_')) return CULT.Icons.pill(CULT.Data.getConsumable(itemId).type);
+    return CULT.Icons.coin();
+  },
+
+  shopItemName(itemId) {
+    if (itemId.startsWith('fabao_')) return CULT.Data.getFabao(itemId).name;
+    if (itemId.startsWith('pill_')) return CULT.Data.getConsumable(itemId).name;
+    return CULT.UI.materialLabel(itemId);
+  },
+
+  // 法宝/材料都带稀有度，丹药目前没有稀有度概念，返回 null 时不加任何品阶样式
+  shopItemRarity(itemId) {
+    if (itemId.startsWith('fabao_')) return CULT.Data.getFabao(itemId).rarity;
+    if (itemId.startsWith('pill_')) return null;
+    const material = CULT.Data.getMaterial(itemId);
+    return material ? material.rarity : null;
+  },
+
+  renderShop(state) {
+    CULT.UI.el('shop-refresh-btn').textContent = `刷新商店 (${state.shop.refreshCost} 灵石)`;
+
+    const stockContainer = CULT.UI.el('shop-stock');
+    stockContainer.innerHTML = state.shop.stock
+      .map((entry) => {
+        const price = CULT.Data.getShopBuyPrice(entry.itemId);
+        const canAfford = state.character.spiritStones >= price && entry.qty > 0;
+        const rarity = CULT.UI.shopItemRarity(entry.itemId);
+        return `<div class="panel ${rarity ? `rarity-${rarity} border` : ''} flex gap-3 items-center">
+          <div class="item-icon ${rarity ? `rarity-${rarity}` : ''}">${CULT.UI.shopItemIcon(entry.itemId)}</div>
+          <div class="flex-1">
+            <div ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(entry.itemId), 'font-medium')}>${CULT.UI.shopItemName(entry.itemId)}</div>
+            <div class="text-xs text-slate-400">剩余 ${entry.qty} · ${price} 灵石</div>
+          </div>
+          <button class="btn-secondary text-xs px-2 py-1" data-buy="${entry.itemId}" ${canAfford ? '' : 'disabled'}>购买</button>
+        </div>`;
+      })
+      .join('');
+    stockContainer.querySelectorAll('[data-buy]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.buyShopItem(btn.dataset.buy));
+    });
+
+    const sellable = Object.entries(state.inventory).filter(
+      ([id, count]) => count > 0 && (id.startsWith('pill_') || id.startsWith('mat_'))
+    );
+    const sellContainer = CULT.UI.el('shop-sell-list');
+    CULT.UI.el('shop-sell-empty').classList.toggle('hidden', sellable.length > 0);
+    sellContainer.innerHTML = sellable
+      .map(([id, count]) => {
+        const price = CULT.Data.getShopSellPrice(id);
+        const rarity = CULT.UI.shopItemRarity(id);
+        return `<div class="flex items-center justify-between panel ${rarity ? `rarity-${rarity} border` : ''}">
+          <div>
+            <div ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(id), 'font-medium')}>${CULT.UI.shopItemName(id)} x${count}</div>
+            <div class="text-xs text-slate-400">出售单价 ${price} 灵石</div>
+          </div>
+          <button class="btn-secondary text-xs px-2 py-1" data-sell="${id}">出售</button>
+        </div>`;
+      })
+      .join('');
+    sellContainer.querySelectorAll('[data-sell]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.sellItem(btn.dataset.sell, 1));
+    });
+
+    // 装备不再走 state.inventory 那套按id堆叠的出售逻辑，单独渲染（只列还没装备的，装备中的要先卸下才能卖）
+    const equippedIds = new Set(Object.values(state.equipped).filter(Boolean));
+    const sellableGear = state.equipment.owned.filter((item) => !equippedIds.has(item.instanceId));
+    const sellEquipmentContainer = CULT.UI.el('shop-sell-equipment');
+    CULT.UI.el('shop-sell-equipment-empty').classList.toggle('hidden', sellableGear.length > 0);
+    sellEquipmentContainer.innerHTML = sellableGear
+      .map((item) => {
+        const price = CULT.Data.getEquipmentSellPrice(item);
+        return `<div class="flex items-center justify-between panel rarity-${item.rarity} border">
+          <div>
+            <div ${CULT.UI.tooltipAttr(CULT.UI.equipmentTooltipText(item), 'font-medium')}>${item.name} <span class="text-xs text-slate-500">Lv.${item.level}</span></div>
+            <div class="text-xs text-slate-400">出售单价 ${price} 灵石</div>
+          </div>
+          <button class="btn-secondary text-xs px-2 py-1" data-sell-equipment="${item.instanceId}">出售</button>
+        </div>`;
+      })
+      .join('');
+    sellEquipmentContainer.querySelectorAll('[data-sell-equipment]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.sellEquipment(btn.dataset.sellEquipment));
+    });
+  },
+
+  renderAlchemy(state) {
+    const container = CULT.UI.el('alchemy-recipes');
+    container.innerHTML = CULT.RECIPES.map((recipe) => {
+      const result = CULT.Data.getConsumable(recipe.resultId);
+      const canCraft = Object.entries(recipe.materials).every(([matId, needed]) => (state.inventory[matId] || 0) >= needed);
+      const materialsText = Object.entries(recipe.materials)
+        .map(([matId, needed]) => {
+          const have = state.inventory[matId] || 0;
+          const cls = have >= needed ? 'text-slate-400' : 'text-rose-400';
+          return `<span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(matId), cls)}>${CULT.UI.materialLabel(matId)} ${have}/${needed}</span>`;
+        })
+        .join('，');
+      return `<div class="panel flex gap-3 items-center">
+        <div class="item-icon">${CULT.Icons.pill(result.type)}</div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between">
+            <span class="font-medium">${recipe.name} → <span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(recipe.resultId))}>${result.name}</span></span>
+            <div class="flex gap-1.5">
+              <button class="btn-secondary text-xs px-2 py-1" data-craft="${recipe.id}" ${canCraft ? '' : 'disabled'}>炼制</button>
+              <button class="btn-secondary text-xs px-2 py-1" data-craft-x10="${recipe.id}" ${canCraft ? '' : 'disabled'}>x10</button>
+            </div>
+          </div>
+          <div class="text-xs mt-1">${materialsText}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const handleCraft = (recipeId, times) => {
+      const recipe = CULT.Data.getRecipe(recipeId);
+      const result = CULT.Game.craftPotion(recipeId, times);
+      if (result) {
+        const consumable = CULT.Data.getConsumable(recipe.resultId);
+        const label = result.crafted > 1 ? `${consumable.name} x${result.crafted}` : consumable.name;
+        CULT.UI.lootQueue.push({ name: label, iconHtml: CULT.Icons.pill(consumable.type), label: '炼丹成功' });
+        CULT.UI.maybeShowNextLoot();
+      }
+    };
+    container.querySelectorAll('[data-craft]').forEach((btn) => {
+      btn.addEventListener('click', () => handleCraft(btn.dataset.craft, 1));
+    });
+    container.querySelectorAll('[data-craft-x10]').forEach((btn) => {
+      btn.addEventListener('click', () => handleCraft(btn.dataset.craftX10, 10));
+    });
+  },
+
+  renderSanctums(state) {
+    const selectedRealmId = state.selectedSanctumRealmId != null ? state.selectedSanctumRealmId : state.character.realmId;
+
+    const realmListContainer = CULT.UI.el('sanctum-realm-list');
+    realmListContainer.innerHTML = CULT.REALMS.map((realm) => {
+      const isCurrent = realm.id === selectedRealmId;
+      const aboveOwnRealm = realm.id > state.character.realmId;
+      const actionHtml = isCurrent
+        ? `<span class="text-xs text-emerald-400">当前</span>`
+        : `<button class="btn-secondary text-xs px-2 py-1" data-select-sanctum-realm="${realm.id}">选择</button>`;
+      return `<div class="flex items-center justify-between panel ${isCurrent ? 'rarity-uncommon border' : ''}">
+        <div>
+          <span>${realm.name}</span>
+          ${aboveOwnRealm ? '<span class="text-xs text-rose-400 ml-1">高于当前境界</span>' : ''}
+        </div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+    realmListContainer.querySelectorAll('[data-select-sanctum-realm]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.selectSanctumRealm(Number(btn.dataset.selectSanctumRealm)));
+    });
+
+    const resting = state.character.restTicksRemaining > 0;
+    for (const tier of ['elite', 'demonlord']) {
+      const cost = CULT.Data.getSanctumCost(selectedRealmId, tier);
+      const realmName = CULT.Data.getRealm(selectedRealmId).name;
+      CULT.UI.el(`sanctum-cost-text-${tier}`).textContent = `挑战境界：${realmName} ｜ 花费：${cost} 灵石`;
+      const btn = CULT.UI.el(`sanctum-challenge-btn-${tier}`);
+      if (state.combat.isEliteChallenge) {
+        btn.disabled = true;
+        btn.textContent = state.combat.challengeTier === tier ? '挑战进行中' : '其他秘境挑战进行中';
+      } else if (resting) {
+        btn.disabled = true;
+        btn.textContent = '闭关中，无法出战';
+      } else {
+        btn.disabled = state.character.spiritStones < cost;
+        btn.textContent = `挑战 (${cost} 灵石)`;
+      }
+    }
+  },
+
+  appendLog(state, text, cls) {
+    state.combat.log.push({ text, cls: cls || '' });
+    if (state.combat.log.length > 30) state.combat.log.shift();
+  },
+
+  onCombatEvent(event) {
+    const state = CULT.Game.state;
+    if (!event) return;
+
+    if (event.type === 'monster_spawned') {
+      CULT.UI.appendLog(state, `你遇到了 ${event.monster.name}！`);
+    } else if (event.type === 'round') {
+      const petPart = event.petDamage > 0 ? `，出战宠物造成 ${event.petDamage} 点伤害` : '';
+      const comboPart = (event.playerFirst && event.playerExtraHit) || (!event.playerFirst && event.monsterExtraHit)
+        ? '（速度优势，连击！）' : '';
+      const firstPart = event.playerFirst ? '你身法更快，先手出击' : `${event.monsterName}身法更快，率先出手`;
+      CULT.UI.appendLog(
+        state,
+        `${firstPart}${comboPart}。你对${event.monsterName}造成 ${event.playerDamage} 点伤害${petPart}，${event.monsterName}对你造成 ${event.monsterDamage} 点伤害。`
+      );
+    } else if (event.type === 'victory') {
+      const parts = [`获得 ${Math.floor(event.loot.exp)} 修为`, `${event.loot.stones} 灵石`];
+      const cleanKill = event.playerFirst && event.monsterDamage === 0;
+      const killPrefix = cleanKill ? `你先手出击，${event.monsterName}甚至没能反击就被击败了！` : `你击败了${event.monsterName}！`;
+      CULT.UI.appendLog(state, `${killPrefix}${parts.join('，')}。`, 'log-victory');
+      for (const item of event.droppedEquipment) {
+        CULT.UI.appendLog(state, `获得珍稀掉落：${item.name}！`, 'log-victory');
+        CULT.UI.lootQueue.push({ name: item.name, iconHtml: CULT.Icons.slot(item.slot), label: '获得珍稀装备' });
+      }
+      for (const fbId of event.loot.fabao) {
+        const fabao = CULT.Data.getFabao(fbId);
+        CULT.UI.appendLog(state, `获得法宝：${fabao.name}！`, 'log-victory');
+        CULT.UI.lootQueue.push({ name: fabao.name, iconHtml: CULT.Icons.category(fabao.category), label: '获得法宝' });
+      }
+      for (const pet of event.capturedPets) {
+        const species = CULT.Data.getPetSpecies(pet.speciesId);
+        CULT.UI.appendLog(state, `捕获了新宠物：${species.name}！`, 'log-victory');
+        CULT.UI.lootQueue.push({ name: species.name, iconHtml: `<span style="font-size:2rem">${species.emoji}</span>`, label: '捕获宠物' });
+      }
+      CULT.UI.maybeShowNextLoot();
+    } else if (event.type === 'defeat') {
+      const noCounter = !event.playerFirst && event.playerDamage === 0;
+      const defeatText = noCounter
+        ? `${event.monsterName}身法快你一筹，你还没来得及还手就被击败了，需要闭关疗养。`
+        : `你被${event.monsterName}击败，需要闭关疗养。`;
+      CULT.UI.appendLog(state, defeatText, 'log-defeat');
+    } else if (event.type === 'rest_complete') {
+      CULT.UI.appendLog(state, '你恢复了元气，重新踏上历练之路。');
+    }
+  },
+
+  onBreakthroughResult(result) {
+    if (!result || !result.attempted) return;
+    const state = CULT.Game.state;
+    if (result.success) {
+      CULT.UI.appendLog(state, '自动突破成功！', 'log-victory');
+    } else {
+      CULT.UI.appendLog(state, '自动突破失败，损失了部分修为。', 'log-defeat');
+    }
+  },
+
+  openBreakthroughModal() {
+    const state = CULT.Game.state;
+    const info = CULT.Combat.getBreakthroughInfo(state);
+    if (!info.eligible) return;
+
+    CULT.UI.el('breakthrough-chance-text').textContent = `成功率：${Math.round(info.chance * 100)}%`;
+    CULT.UI.el('breakthrough-card').classList.remove('flipped');
+    CULT.UI.el('breakthrough-confirm-btn').classList.remove('hidden');
+    CULT.UI.el('breakthrough-close-btn').classList.add('hidden');
+    CULT.UI.el('breakthrough-modal').classList.remove('hidden');
+  },
+
+  confirmBreakthrough() {
+    const result = CULT.Game.attemptBreakthrough();
+    if (!result.attempted) return;
+
+    const face = CULT.UI.el('breakthrough-result-face');
+    const text = CULT.UI.el('breakthrough-result-text');
+    face.className = `card-back flex items-center justify-center relative overflow-hidden ${result.success ? 'success' : 'fail'}`;
+    text.textContent = result.success ? '突破成功！' : '突破失败';
+
+    CULT.UI.el('breakthrough-card').classList.add('flipped');
+    CULT.UI.el('breakthrough-confirm-btn').classList.add('hidden');
+    CULT.UI.el('breakthrough-close-btn').classList.remove('hidden');
+
+    if (result.success) {
+      setTimeout(() => CULT.UI.spawnParticles('breakthrough-particles'), 600);
+    }
+  },
+
+  spawnParticles(containerId) {
+    const container = CULT.UI.el(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    const count = 16;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const distance = 40 + Math.random() * 30;
+      const particle = document.createElement('span');
+      particle.className = 'particle';
+      particle.style.setProperty('--px', `${Math.cos(angle) * distance}px`);
+      particle.style.setProperty('--py', `${Math.sin(angle) * distance}px`);
+      particle.style.animationDelay = `${Math.random() * 0.15}s`;
+      container.appendChild(particle);
+    }
+  },
+
+  closeBreakthroughModal() {
+    CULT.UI.el('breakthrough-modal').classList.add('hidden');
+  },
+
+  maybeShowNextLoot() {
+    if (CULT.UI.lootModalOpen || CULT.UI.lootQueue.length === 0) return;
+    const entry = CULT.UI.lootQueue.shift();
+    CULT.UI.el('loot-modal-title').textContent = entry.label || '珍稀掉落';
+    CULT.UI.el('loot-item-name').textContent = entry.name;
+    CULT.UI.el('loot-item-icon').innerHTML = entry.iconHtml;
+    CULT.UI.el('loot-modal').classList.remove('hidden');
+    CULT.UI.lootModalOpen = true;
+  },
+
+  closeLootModal() {
+    CULT.UI.el('loot-modal').classList.add('hidden');
+    CULT.UI.lootModalOpen = false;
+    CULT.UI.maybeShowNextLoot();
+  },
+
+  showOfflineSummary(progress) {
+    CULT.UI.el('offline-duration').textContent = CULT.utils.formatDuration(progress.elapsedMs);
+    CULT.UI.el('offline-cultivation').textContent = CULT.utils.formatNumber(progress.cultivationGained);
+    CULT.UI.el('offline-stones').textContent = CULT.utils.formatNumber(progress.stonesGained);
+    CULT.UI.el('offline-kills').textContent = progress.estimatedKills;
+    CULT.UI.el('offline-equipment').textContent = progress.equipmentCount || 0;
+    CULT.UI.el('offline-fabao').textContent = progress.fabaoCount || 0;
+    CULT.UI.el('offline-pets').textContent = progress.petsCaptured || 0;
+    CULT.UI.el('offline-breakthroughs').textContent = progress.breakthroughsDuringOffline || 0;
+    CULT.UI.el('offline-modal').classList.remove('hidden');
+  },
+
+  closeOfflineModal() {
+    CULT.UI.el('offline-modal').classList.add('hidden');
+  },
+
+  handleExport() {
+    const json = CULT.Game.exportSave();
+    const box = CULT.UI.el('export-save-box');
+    box.value = json;
+    box.select();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(json).catch(() => {});
+    } else {
+      try { document.execCommand('copy'); } catch (e) { /* 静默失败，文本已在文本框中可手动复制 */ }
+    }
+  },
+
+  handleImport() {
+    const text = CULT.UI.el('import-save-box').value.trim();
+    if (!text) return;
+    if (!confirm('导入存档将覆盖当前进度，确定继续吗？')) return;
+    try {
+      CULT.Game.importSave(text);
+      alert('导入成功！');
+    } catch (e) {
+      alert('导入失败：存档内容不是有效的 JSON。');
+    }
+  },
+
+  handleReset() {
+    if (!confirm('确定要重置存档吗？此操作不可恢复。')) return;
+    CULT.Game.resetSave();
+  },
+};
