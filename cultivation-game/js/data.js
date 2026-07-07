@@ -119,6 +119,62 @@ CULT.MONSTERS = [
     mult: { hp: 2.8, atk: 2.0, def: 1.4 },
     loot: { expRange: [6000, 10000], stonesRange: [5000, 8000], materials: [{ id: 'mat_demon_core', chance: 0.7 }], equipment: [{ slot: 'weapon', chance: 0.08 }],
       fabao: [{ id: 'fabao_def_pantian', chance: 0.02 }, { id: 'fabao_boost_taiji', chance: 0.015 }] } },
+
+  // 炼虚境专属（此前化神以上境界完全没有专属怪物，只能靠低境界杂兵数值放大凑数）
+  { id: 'void_rhino', name: '幽冥犀', minRealm: 5, tier: 'normal', emoji: '\u{1F98F}',
+    mult: { hp: 1.0, atk: 1.0, def: 0.85 },
+    loot: { expRange: [8000, 14000], stonesRange: [6000, 10500], materials: [{ id: 'mat_rhino_horn', chance: 0.28 }], equipment: [{ slot: 'gloves', chance: 0.02 }],
+      pets: [{ id: 'pet_void_rhino', chance: 0.006 }] } },
+  { id: 'blood_bat', name: '血影蝠皇', minRealm: 5, tier: 'elite', emoji: '\u{1F987}',
+    mult: { hp: 1.6, atk: 1.35, def: 1.05 },
+    loot: { expRange: [18000, 28000], stonesRange: [13000, 21000], materials: [{ id: 'mat_void_essence', chance: 0.06 }], equipment: [{ slot: 'accessory', chance: 0.03 }, { slot: 'boots', chance: 0.02 }],
+      fabao: [{ id: 'fabao_atk_poyun', chance: 0.008 }] } },
+  { id: 'boss_lianxu', name: '炼虚魔尊', minRealm: 5, tier: 'boss', emoji: '\u{1F480}',
+    mult: { hp: 3.0, atk: 2.1, def: 1.5 },
+    loot: { expRange: [170000, 260000], stonesRange: [130000, 200000], materials: [{ id: 'mat_demon_core', chance: 0.75 }, { id: 'mat_void_essence', chance: 0.12 }], equipment: [{ slot: 'weapon', chance: 0.09 }],
+      fabao: [{ id: 'fabao_atk_taiyi', chance: 0.025 }, { id: 'fabao_boost_taiji', chance: 0.02 }] } },
+
+  // 合体境专属
+  { id: 'suanni', name: '玄天狻猊', minRealm: 6, tier: 'normal', emoji: '\u{1F981}',
+    mult: { hp: 1.05, atk: 1.05, def: 0.88 },
+    loot: { expRange: [125000, 220000], stonesRange: [95000, 165000], materials: [{ id: 'mat_suanni_mane', chance: 0.28 }], equipment: [{ slot: 'armor', chance: 0.02 }],
+      pets: [{ id: 'pet_suanni', chance: 0.006 }] } },
+  { id: 'flame_ape', name: '赤炎魔猿', minRealm: 6, tier: 'elite', emoji: '\u{1F98D}',
+    mult: { hp: 1.7, atk: 1.4, def: 1.1 },
+    loot: { expRange: [280000, 440000], stonesRange: [210000, 330000], materials: [{ id: 'mat_void_essence', chance: 0.07 }], equipment: [{ slot: 'gloves', chance: 0.03 }, { slot: 'weapon', chance: 0.02 }],
+      fabao: [{ id: 'fabao_def_wushuang', chance: 0.009 }] } },
+  { id: 'boss_heti', name: '合体天魔', minRealm: 6, tier: 'boss', emoji: '\u{1F47D}',
+    mult: { hp: 3.2, atk: 2.2, def: 1.55 },
+    loot: { expRange: [2650000, 4100000], stonesRange: [2000000, 3100000], materials: [{ id: 'mat_demon_core', chance: 0.8 }, { id: 'mat_void_essence', chance: 0.14 }], equipment: [{ slot: 'armor', chance: 0.10 }],
+      fabao: [{ id: 'fabao_def_pantian', chance: 0.03 }, { id: 'fabao_boost_taiji', chance: 0.025 }] } },
+
+  // 大乘境专属
+  { id: 'thunderbird', name: '紫霄雷鸟', minRealm: 7, tier: 'normal', emoji: '\u{1F985}',
+    mult: { hp: 1.1, atk: 1.1, def: 0.9 },
+    loot: { expRange: [2000000, 3600000], stonesRange: [1500000, 2700000], materials: [{ id: 'mat_thunder_feather', chance: 0.25 }], equipment: [{ slot: 'boots', chance: 0.02 }],
+      pets: [{ id: 'pet_thunderbird', chance: 0.006 }] } },
+  { id: 'baize', name: '太虚白泽', minRealm: 7, tier: 'elite', emoji: '\u{1F984}',
+    mult: { hp: 1.8, atk: 1.45, def: 1.15 },
+    loot: { expRange: [4500000, 7200000], stonesRange: [3400000, 5400000], materials: [{ id: 'mat_tribulation_crystal', chance: 0.05 }], equipment: [{ slot: 'accessory', chance: 0.03 }, { slot: 'armor', chance: 0.02 }],
+      fabao: [{ id: 'fabao_atk_poyun', chance: 0.01 }] } },
+  { id: 'boss_dacheng', name: '大乘魔皇', minRealm: 7, tier: 'boss', emoji: '\u{1F608}',
+    mult: { hp: 3.4, atk: 2.3, def: 1.6 },
+    loot: { expRange: [43000000, 67000000], stonesRange: [32000000, 50000000], materials: [{ id: 'mat_demon_core', chance: 0.85 }, { id: 'mat_tribulation_crystal', chance: 0.1 }], equipment: [{ slot: 'accessory', chance: 0.11 }],
+      fabao: [{ id: 'fabao_atk_taiyi', chance: 0.035 }, { id: 'fabao_boost_taiji', chance: 0.03 }] } },
+
+  // 渡劫境专属：终极内容，九天雷劫兽是目前的最终 boss
+  { id: 'tribulation_beast', name: '劫云凶兽', minRealm: 8, tier: 'normal', emoji: '\u{1F43B}',
+    mult: { hp: 1.15, atk: 1.15, def: 0.92 },
+    loot: { expRange: [33000000, 60000000], stonesRange: [25000000, 45000000], materials: [{ id: 'mat_tribulation_fur', chance: 0.25 }], equipment: [{ slot: 'gloves', chance: 0.025 }],
+      pets: [{ id: 'pet_tribulation_beast', chance: 0.006 }] } },
+  { id: 'demon_scorpion', name: '通天魔尊', minRealm: 8, tier: 'elite', emoji: '\u{1F982}',
+    mult: { hp: 1.9, atk: 1.5, def: 1.2 },
+    loot: { expRange: [75000000, 120000000], stonesRange: [56000000, 90000000], materials: [{ id: 'mat_tribulation_crystal', chance: 0.06 }], equipment: [{ slot: 'weapon', chance: 0.035 }, { slot: 'boots', chance: 0.025 }],
+      fabao: [{ id: 'fabao_def_wushuang', chance: 0.012 }] } },
+  { id: 'boss_dujie', name: '九天雷劫兽', minRealm: 8, tier: 'boss', emoji: '\u{1F409}',
+    mult: { hp: 4.0, atk: 2.6, def: 1.8 },
+    loot: { expRange: [700000000, 1100000000], stonesRange: [520000000, 830000000], materials: [{ id: 'mat_demon_core', chance: 0.9 }, { id: 'mat_tribulation_crystal', chance: 0.15 }], equipment: [{ slot: 'weapon', chance: 0.12 }, { slot: 'armor', chance: 0.08 }],
+      fabao: [{ id: 'fabao_atk_taiyi', chance: 0.04 }, { id: 'fabao_def_pantian', chance: 0.04 }, { id: 'fabao_boost_taiji', chance: 0.05 }] } },
 ];
 
 // 法宝：分攻击/防御/增幅三类，加成为百分比（xxxMult），后期数值达到万/亿级别时依然有意义
@@ -158,6 +214,10 @@ CULT.PET_SPECIES = [
   { id: 'pet_crane', name: '玄羽雏鹤', sourceMonsterId: 'crane', emoji: '\u{1F54A}️', type: 'flying' },
   { id: 'pet_python', name: '玄冥小蟒', sourceMonsterId: 'elite_python', emoji: '\u{1F40D}', type: 'sea' },
   { id: 'pet_phantom', name: '化神小灵', sourceMonsterId: 'phantom', emoji: '\u{1F47B}', type: 'sea' },
+  { id: 'pet_void_rhino', name: '幽冥犀崽', sourceMonsterId: 'void_rhino', emoji: '\u{1F98F}', type: 'land' },
+  { id: 'pet_suanni', name: '玄天小狻猊', sourceMonsterId: 'suanni', emoji: '\u{1F981}', type: 'land' },
+  { id: 'pet_thunderbird', name: '紫霄雏雷鸟', sourceMonsterId: 'thunderbird', emoji: '\u{1F985}', type: 'flying' },
+  { id: 'pet_tribulation_beast', name: '劫云小凶兽', sourceMonsterId: 'tribulation_beast', emoji: '\u{1F43B}', type: 'sea' },
 ];
 
 // 装备：掉落时按怪物等级现场生成属性（百分比加成），不再是固定表——见 CULT.Data.generateEquipmentStats
@@ -183,6 +243,7 @@ CULT.CONSUMABLES = [
   { id: 'pill_ning_qi', name: '凝气丹', type: 'exp_boost', desc: '立即获得一定修为，由3颗聚气丹融合而成。', effect: { flatExp: 1275 }, price: 200 },
   { id: 'pill_yuan_qi', name: '元气丹', type: 'exp_boost', desc: '立即获得大量修为，由3颗凝气丹融合而成。', effect: { flatExp: 3250 }, price: 500 },
   { id: 'pill_taiyi', name: '太乙丹', type: 'exp_boost', desc: '立即获得海量修为，由3颗元气丹融合而成。', effect: { flatExp: 8300 }, price: 1250 },
+  { id: 'pill_tianjie', name: '天劫丹', type: 'exp_boost', desc: '立即获得恐怖修为，需集齐炼虚至渡劫四境的稀有材料方能炼制。', effect: { flatExp: 500000 }, price: 40000 },
   { id: 'pill_po_jing', name: '破境丹', type: 'breakthrough_boost', desc: '下一次突破成功率提升。', effect: { successChanceBonus: 0.15 }, price: 150 },
   { id: 'pill_liao_shang', name: '疗伤丹', type: 'heal', desc: '立即回复全部气血。', effect: { healPercent: 1.0 }, price: 50 },
   { id: 'pill_atk_boost', name: '锐金丹', type: 'stat_boost', desc: '永久提升攻击。', effect: { stat: 'atk', amount: 25 }, price: 200 },
@@ -201,6 +262,12 @@ CULT.MATERIALS = [
   { id: 'mat_crane_feather', name: '仙鹤羽毛', rarity: 'uncommon' },
   { id: 'mat_python_scale', name: '蛟蟒鳞片', rarity: 'rare' },
   { id: 'mat_phantom_dust', name: '虚影灵尘', rarity: 'rare' },
+  { id: 'mat_rhino_horn', name: '幽冥犀角', rarity: 'rare' },
+  { id: 'mat_suanni_mane', name: '狻猊鬃毛', rarity: 'rare' },
+  { id: 'mat_thunder_feather', name: '雷鸟羽', rarity: 'epic' },
+  { id: 'mat_tribulation_fur', name: '劫兽皮毛', rarity: 'epic' },
+  { id: 'mat_void_essence', name: '虚灵精华', rarity: 'epic' },
+  { id: 'mat_tribulation_crystal', name: '天劫神晶', rarity: 'epic' },
 ];
 
 // 炼丹固定配方：材料组合 -> 丹药
@@ -216,6 +283,9 @@ CULT.RECIPES = [
   { id: 'recipe_qi_pill_fuse_mid', name: '凝气丹方（融合）', resultId: 'pill_ning_qi', resultCount: 1, materials: { pill_ju_qi: 3 } },
   { id: 'recipe_qi_pill_fuse_high', name: '元气丹方（融合）', resultId: 'pill_yuan_qi', resultCount: 1, materials: { pill_ning_qi: 3 } },
   { id: 'recipe_qi_pill_fuse_highest', name: '太乙丹方（融合）', resultId: 'pill_taiyi', resultCount: 1, materials: { pill_yuan_qi: 3 } },
+  // 集齐炼虚到渡劫四境的稀有材料才能炼制，是目前的终极配方
+  { id: 'recipe_tianjie_pill', name: '天劫丹方', resultId: 'pill_tianjie', resultCount: 1,
+    materials: { mat_rhino_horn: 3, mat_suanni_mane: 3, mat_thunder_feather: 2, mat_tribulation_fur: 2, mat_void_essence: 2, mat_tribulation_crystal: 2 } },
 ];
 
 // 宠物品质：复用现有的稀有度体系（common/uncommon/rare/epic），捕获时随机抽取

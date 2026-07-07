@@ -340,7 +340,8 @@ CULT.Game = {
     const bossPool = CULT.MONSTERS.filter((m) => m.tier === 'boss' && m.minRealm <= realmId);
     const elitePool = CULT.MONSTERS.filter((m) => m.tier === 'elite' && m.minRealm <= realmId);
     const pool = bossPool.length > 0 ? bossPool : (elitePool.length > 0 ? elitePool : CULT.MONSTERS);
-    const monsterDef = CULT.utils.pick(pool);
+    // 按 minRealm 距离目标境界的远近加权，避免均匀随机时挑出远低于目标境界的旧 boss（掉落也跟着变旧）
+    const monsterDef = CULT.utils.weightedPick(pool, (m) => 1 / (1 + (realmId - m.minRealm)));
     const instance = CULT.Combat.instantiateMonster(monsterDef, state, CULT.Data.getSanctumExtraMult(sanctumTier), realmId);
 
     state.character.spiritStones -= cost;
