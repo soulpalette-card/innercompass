@@ -3,23 +3,11 @@ CULT.Combat = {
   computeStats(state) {
     const base = CULT.Data.getBaseStats(state.character.realmId, state.character.subLevel);
 
-    let flatHp = 0, flatAtk = 0, flatDef = 0, flatSpd = 0;
-    for (const slot of Object.keys(state.equipped)) {
-      const itemId = state.equipped[slot];
-      if (!itemId) continue;
-      const item = CULT.Data.getEquipment(itemId);
-      if (!item) continue;
-      flatHp += item.bonuses.hp || 0;
-      flatAtk += item.bonuses.atk || 0;
-      flatDef += item.bonuses.def || 0;
-      flatSpd += item.bonuses.spd || 0;
-    }
-
     const alchemyBonuses = state.character.alchemyBonuses || {};
-    flatHp += alchemyBonuses.hp || 0;
-    flatAtk += alchemyBonuses.atk || 0;
-    flatDef += alchemyBonuses.def || 0;
-    flatSpd += alchemyBonuses.spd || 0;
+    const flatHp = alchemyBonuses.hp || 0;
+    const flatAtk = alchemyBonuses.atk || 0;
+    const flatDef = alchemyBonuses.def || 0;
+    const flatSpd = alchemyBonuses.spd || 0;
 
     let hpMult = 0, atkMult = 0, defMult = 0, spdMult = 0, cultivationSpeedMult = 0;
     for (const techId of state.techniques.learned) {
@@ -30,6 +18,18 @@ CULT.Combat = {
       defMult += tech.bonuses.defMult || 0;
       spdMult += tech.bonuses.spdMult || 0;
       cultivationSpeedMult += tech.bonuses.cultivationSpeedMult || 0;
+    }
+
+    // 装备：掉落时生成的百分比加成，跟法宝、功法用同一套 xxxMult 累加方式，不会随数值膨胀而失效
+    for (const slot of Object.keys(state.equipped)) {
+      const instanceId = state.equipped[slot];
+      if (!instanceId) continue;
+      const item = state.equipment.owned.find((e) => e.instanceId === instanceId);
+      if (!item) continue;
+      hpMult += item.bonuses.hpMult || 0;
+      atkMult += item.bonuses.atkMult || 0;
+      defMult += item.bonuses.defMult || 0;
+      spdMult += item.bonuses.spdMult || 0;
     }
 
     for (const category of Object.keys(state.equippedFabao)) {
@@ -70,13 +70,13 @@ CULT.Combat = {
     };
   },
 
-  // 对比某件未装备的装备 vs 当前槽位已装备的物品，返回每个属性的增减值
-  getEquipmentDelta(state, itemId) {
-    const item = CULT.Data.getEquipment(itemId);
+  // 对比某件未装备的装备实例 vs 当前槽位已装备的实例，返回每个属性的增减值（百分比）
+  getEquipmentDelta(state, instanceId) {
+    const item = state.equipment.owned.find((e) => e.instanceId === instanceId);
     const currentId = state.equipped[item.slot];
-    const current = currentId ? CULT.Data.getEquipment(currentId) : null;
+    const current = currentId ? state.equipment.owned.find((e) => e.instanceId === currentId) : null;
     const delta = {};
-    for (const stat of ['hp', 'atk', 'def', 'spd']) {
+    for (const stat of ['hpMult', 'atkMult', 'defMult', 'spdMult']) {
       delta[stat] = (item.bonuses[stat] || 0) - (current ? current.bonuses[stat] || 0 : 0);
     }
     return delta;
@@ -92,6 +92,14 @@ CULT.Combat = {
       delta[stat] = (fabao.bonuses[stat] || 0) - (current ? current.bonuses[stat] || 0 : 0);
     }
     return delta;
+  },
+
+  // 掉落一件装备：按部位+怪物等级现场生成属性，推入 owned 并返回，跟 capturePet 是同一个套路
+  dropEquipment(state, slot, monsterLevel) {
+    const stats = CULT.Data.generateEquipmentStats(slot, monsterLevel);
+    const instance = { instanceId: `eq_${slot}_${CULT.utils.now()}_${Math.floor(Math.random() * 10000)}`, ...stats };
+    state.equipment.owned.push(instance);
+    return instance;
   },
 
   // 单只出战宠物每回合造成的伤害：玩家自身基础攻击的一个比例，随宠物阶段/品质/等级放大
@@ -159,7 +167,7 @@ CULT.Combat = {
       exp: CULT.utils.randInt(loot.expRange[0], loot.expRange[1]),
       stones: CULT.utils.randInt(loot.stonesRange[0], loot.stonesRange[1]),
       materials: [],
-      equipment: [],
+      equipmentSlots: [], // 只记录"掉了哪个部位"，具体属性由 dropEquipment 在拿到怪物等级后现场生成
       fabao: [],
       pets: [],
     };
@@ -171,7 +179,7 @@ CULT.Combat = {
       if (Math.random() < Math.min(1, mat.chance * materialMult)) result.materials.push(mat.id);
     }
     for (const eq of loot.equipment || []) {
-      if (Math.random() < Math.min(1, eq.chance * equipMult)) result.equipment.push(eq.id);
+      if (Math.random() < Math.min(1, eq.chance * equipMult)) result.equipmentSlots.push(eq.slot);
     }
     for (const fb of loot.fabao || []) {
       if (Math.random() < Math.min(1, fb.chance * fabaoMult)) result.fabao.push(fb.id);
@@ -338,15 +346,14 @@ CULT.Combat = {
 
     if (state.combat.currentMonsterHp <= 0) {
       const monsterDef = CULT.MONSTERS.find((m) => m.id === state.combat.currentMonsterId);
+      const monsterLevel = CULT.Data.getMonsterLevel(state, monsterDef.tier); // 装备要按这只怪的等级生成，提前算好
       const loot = CULT.Combat.rollLoot(monsterDef, state);
       character.cultivation += loot.exp;
       character.spiritStones += loot.stones;
       for (const matId of loot.materials) {
         state.inventory[matId] = (state.inventory[matId] || 0) + 1;
       }
-      for (const eqId of loot.equipment) {
-        state.inventory[eqId] = (state.inventory[eqId] || 0) + 1;
-      }
+      const droppedEquipment = loot.equipmentSlots.map((slot) => CULT.Combat.dropEquipment(state, slot, monsterLevel));
       if (state.combat.isEliteChallenge) {
         const isDemonLord = state.combat.challengeTier === 'demonlord';
         // 魔王秘境奖励更好：额外多roll一次法宝，且稀有度分布向精良/极品倾斜
@@ -358,7 +365,6 @@ CULT.Combat = {
       for (const fbId of loot.fabao) {
         state.inventory[fbId] = (state.inventory[fbId] || 0) + 1;
       }
-      const monsterLevel = CULT.Data.getMonsterLevel(state, monsterDef.tier);
       const capturedPets = loot.pets.map((speciesId) => CULT.Combat.capturePet(state, speciesId, monsterLevel));
       state.stats.totalBattlesWon += 1;
       CULT.Combat.awardPetExp(state, CULT.TUNING.petExpPerVictory);
@@ -366,6 +372,7 @@ CULT.Combat = {
       event.type = 'victory';
       event.monsterName = state.combat.currentMonsterName;
       event.loot = loot;
+      event.droppedEquipment = droppedEquipment;
       event.capturedPets = capturedPets;
 
       CULT.Combat.endEncounter(state);

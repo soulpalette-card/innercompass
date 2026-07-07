@@ -69,6 +69,12 @@ CULT.TUNING = {
   shopStockSize: 6,
   shopSellRateOfBuyPrice: 0.35,
   rarityBasePrice: { common: 20, uncommon: 60, rare: 220, epic: 900 },
+
+  // 装备掉落时现场生成属性：每件装备只加成它所属部位主打的那几个属性（xxxMult），
+  // 数值 = (基础% + 怪物等级*每级% ) * 稀有度倍率，再平均分给主打的几个属性，永远按百分比走，不会随数值膨胀而变得没用
+  equipmentSlotStatFocus: { weapon: ['atk'], armor: ['hp', 'def'], accessory: ['atk', 'spd'], boots: ['spd'], gloves: ['atk', 'def'] },
+  equipmentBaseBonusPct: 0.06,
+  equipmentLevelBonusPct: 0.0015,
 };
 
 // 怪物：数值以"相对玩家当前基础属性的倍率"表示，自动随玩家境界缩放
@@ -79,31 +85,31 @@ CULT.MONSTERS = [
       pets: [{ id: 'pet_slime', chance: 0.006 }] } },
   { id: 'wolf', name: '妖狼', minRealm: 0, tier: 'normal', emoji: '\u{1F43A}',
     mult: { hp: 0.8, atk: 0.7, def: 0.55 },
-    loot: { expRange: [8, 16], stonesRange: [5, 12], materials: [{ id: 'mat_wolf_fang', chance: 0.3 }], equipment: [{ id: 'eq_sword_qingfeng', chance: 0.015 }],
+    loot: { expRange: [8, 16], stonesRange: [5, 12], materials: [{ id: 'mat_wolf_fang', chance: 0.3 }], equipment: [{ slot: 'weapon', chance: 0.015 }],
       fabao: [{ id: 'fabao_atk_leihuo', chance: 0.004 }], pets: [{ id: 'pet_wolf', chance: 0.005 }] } },
   { id: 'boar', name: '铁鬃野猪', minRealm: 0, tier: 'normal', emoji: '\u{1F417}',
     mult: { hp: 1.0, atk: 0.6, def: 0.8 },
-    loot: { expRange: [10, 18], stonesRange: [6, 14], materials: [{ id: 'mat_boar_hide', chance: 0.3 }], equipment: [{ id: 'eq_armor_xuantie', chance: 0.012 }, { id: 'eq_gloves_longzhua', chance: 0.012 }],
+    loot: { expRange: [10, 18], stonesRange: [6, 14], materials: [{ id: 'mat_boar_hide', chance: 0.3 }], equipment: [{ slot: 'armor', chance: 0.012 }, { slot: 'gloves', chance: 0.012 }],
       fabao: [{ id: 'fabao_def_xuangui', chance: 0.004 }], pets: [{ id: 'pet_boar', chance: 0.005 }] } },
   { id: 'elite_fox', name: '九尾妖狐', minRealm: 1, tier: 'elite', emoji: '\u{1F98A}',
     mult: { hp: 1.4, atk: 1.2, def: 0.9 },
-    loot: { expRange: [30, 55], stonesRange: [20, 40], materials: [{ id: 'mat_fox_bead', chance: 0.2 }], equipment: [{ id: 'eq_ring_lingxi', chance: 0.02 }],
+    loot: { expRange: [30, 55], stonesRange: [20, 40], materials: [{ id: 'mat_fox_bead', chance: 0.2 }], equipment: [{ slot: 'accessory', chance: 0.02 }],
       fabao: [{ id: 'fabao_atk_poyun', chance: 0.006 }, { id: 'fabao_boost_hunyuan', chance: 0.003 }], pets: [{ id: 'pet_fox', chance: 0.007 }] } },
   { id: 'boss_jindan', name: '金丹魔君', minRealm: 2, tier: 'boss', emoji: '\u{1F479}',
     mult: { hp: 2.2, atk: 1.6, def: 1.2 },
-    loot: { expRange: [200, 350], stonesRange: [150, 260], materials: [{ id: 'mat_demon_core', chance: 0.5 }], equipment: [{ id: 'eq_sword_moyin', chance: 0.05 }],
+    loot: { expRange: [200, 350], stonesRange: [150, 260], materials: [{ id: 'mat_demon_core', chance: 0.5 }], equipment: [{ slot: 'weapon', chance: 0.05 }],
       fabao: [{ id: 'fabao_def_wushuang', chance: 0.015 }, { id: 'fabao_boost_hunyuan', chance: 0.01 }] } },
   { id: 'crane', name: '玄羽仙鹤', minRealm: 3, tier: 'normal', emoji: '\u{1F54A}️',
     mult: { hp: 0.9, atk: 0.9, def: 0.7 },
-    loot: { expRange: [80, 140], stonesRange: [60, 110], materials: [{ id: 'mat_crane_feather', chance: 0.25 }], equipment: [{ id: 'eq_boots_yunxing', chance: 0.015 }],
+    loot: { expRange: [80, 140], stonesRange: [60, 110], materials: [{ id: 'mat_crane_feather', chance: 0.25 }], equipment: [{ slot: 'boots', chance: 0.015 }],
       pets: [{ id: 'pet_crane', chance: 0.007 }] } },
   { id: 'elite_python', name: '玄冥蛟蟒', minRealm: 3, tier: 'elite', emoji: '\u{1F40D}',
     mult: { hp: 1.5, atk: 1.3, def: 1.0 },
-    loot: { expRange: [180, 300], stonesRange: [120, 220], materials: [{ id: 'mat_python_scale', chance: 0.2 }], equipment: [{ id: 'eq_armor_xuanming', chance: 0.02 }, { id: 'eq_boots_pojun', chance: 0.015 }],
+    loot: { expRange: [180, 300], stonesRange: [120, 220], materials: [{ id: 'mat_python_scale', chance: 0.2 }], equipment: [{ slot: 'armor', chance: 0.02 }, { slot: 'boots', chance: 0.015 }],
       fabao: [{ id: 'fabao_def_wushuang', chance: 0.006 }], pets: [{ id: 'pet_python', chance: 0.007 }] } },
   { id: 'boss_yuanying', name: '元婴期魔尊', minRealm: 3, tier: 'boss', emoji: '\u{1F47A}',
     mult: { hp: 2.5, atk: 1.8, def: 1.3 },
-    loot: { expRange: [900, 1500], stonesRange: [700, 1200], materials: [{ id: 'mat_demon_core', chance: 0.6 }], equipment: [{ id: 'eq_ring_ziyan', chance: 0.05 }, { id: 'eq_gloves_jinlin', chance: 0.03 }],
+    loot: { expRange: [900, 1500], stonesRange: [700, 1200], materials: [{ id: 'mat_demon_core', chance: 0.6 }], equipment: [{ slot: 'accessory', chance: 0.05 }, { slot: 'gloves', chance: 0.03 }],
       fabao: [{ id: 'fabao_atk_taiyi', chance: 0.015 }, { id: 'fabao_boost_taiji', chance: 0.008 }] } },
   { id: 'phantom', name: '化神虚影', minRealm: 4, tier: 'normal', emoji: '\u{1F47B}',
     mult: { hp: 1.0, atk: 1.0, def: 0.8 },
@@ -111,7 +117,7 @@ CULT.MONSTERS = [
       pets: [{ id: 'pet_phantom', chance: 0.007 }] } },
   { id: 'boss_huashen', name: '化神大能', minRealm: 4, tier: 'boss', emoji: '\u{1F47F}',
     mult: { hp: 2.8, atk: 2.0, def: 1.4 },
-    loot: { expRange: [6000, 10000], stonesRange: [5000, 8000], materials: [{ id: 'mat_demon_core', chance: 0.7 }], equipment: [{ id: 'eq_sword_moyin', chance: 0.08 }],
+    loot: { expRange: [6000, 10000], stonesRange: [5000, 8000], materials: [{ id: 'mat_demon_core', chance: 0.7 }], equipment: [{ slot: 'weapon', chance: 0.08 }],
       fabao: [{ id: 'fabao_def_pantian', chance: 0.02 }, { id: 'fabao_boost_taiji', chance: 0.015 }] } },
 ];
 
@@ -154,19 +160,22 @@ CULT.PET_SPECIES = [
   { id: 'pet_phantom', name: '化神小灵', sourceMonsterId: 'phantom', emoji: '\u{1F47B}', type: 'sea' },
 ];
 
-// 装备：flat 加成
-CULT.EQUIPMENT = [
-  { id: 'eq_sword_qingfeng', name: '青锋剑', slot: 'weapon', rarity: 'common', bonuses: { atk: 15 } },
-  { id: 'eq_sword_moyin', name: '墨隐剑', slot: 'weapon', rarity: 'epic', bonuses: { atk: 220, spd: 10 } },
-  { id: 'eq_armor_xuantie', name: '玄铁甲', slot: 'armor', rarity: 'uncommon', bonuses: { def: 20, hp: 120 } },
-  { id: 'eq_armor_xuanming', name: '玄冥战袍', slot: 'armor', rarity: 'rare', bonuses: { def: 60, hp: 400 } },
-  { id: 'eq_ring_lingxi', name: '灵犀指环', slot: 'accessory', rarity: 'uncommon', bonuses: { spd: 12, hp: 60 } },
-  { id: 'eq_ring_ziyan', name: '紫炎戒', slot: 'accessory', rarity: 'epic', bonuses: { atk: 90, def: 30 } },
-  { id: 'eq_boots_yunxing', name: '云行靴', slot: 'boots', rarity: 'uncommon', bonuses: { spd: 15 } },
-  { id: 'eq_boots_pojun', name: '破军战靴', slot: 'boots', rarity: 'rare', bonuses: { spd: 30, hp: 150 } },
-  { id: 'eq_gloves_longzhua', name: '龙爪手套', slot: 'gloves', rarity: 'uncommon', bonuses: { atk: 25 } },
-  { id: 'eq_gloves_jinlin', name: '金鳞护手', slot: 'gloves', rarity: 'rare', bonuses: { atk: 45, def: 20 } },
+// 装备：掉落时按怪物等级现场生成属性（百分比加成），不再是固定表——见 CULT.Data.generateEquipmentStats
+CULT.EQUIPMENT_RARITIES = [
+  { id: 'common', name: '普通', weight: 60, mult: 1.0 },
+  { id: 'uncommon', name: '优良', weight: 25, mult: 1.3 },
+  { id: 'rare', name: '精良', weight: 12, mult: 1.7 },
+  { id: 'epic', name: '极品', weight: 3, mult: 2.3 },
 ];
+
+// 每个部位主打的属性；生成时百分比会平均分给这些属性
+CULT.EQUIPMENT_NAME_POOL = {
+  weapon: ['青锋剑', '墨隐剑', '裂魂刀', '紫电枪'],
+  armor: ['玄铁甲', '玄冥战袍', '天罡铠', '龙鳞甲'],
+  accessory: ['灵犀指环', '紫炎戒', '星辰坠', '乾坤符'],
+  boots: ['云行靴', '破军战靴', '疾风履', '踏浪靴'],
+  gloves: ['龙爪手套', '金鳞护手', '烈焰拳套', '寒冰护腕'],
+};
 
 // 消耗品
 CULT.CONSUMABLES = [
@@ -315,8 +324,20 @@ CULT.Data = {
     };
   },
 
-  getEquipment(id) {
-    return CULT.EQUIPMENT.find((e) => e.id === id);
+  // 纯函数，不碰 state：按部位+怪物等级现场生成一件装备的属性快照
+  // 返回的 bonuses 都是 xxxMult 百分比，和法宝、功法用同一套加成体系
+  generateEquipmentStats(slot, monsterLevel) {
+    const focusStats = CULT.TUNING.equipmentSlotStatFocus[slot] || ['atk'];
+    const rarity = CULT.utils.weightedPick(CULT.EQUIPMENT_RARITIES, (r) => r.weight);
+    const pctPerStat = (CULT.TUNING.equipmentBaseBonusPct + monsterLevel * CULT.TUNING.equipmentLevelBonusPct)
+      * rarity.mult / focusStats.length;
+    const bonuses = {};
+    for (const stat of focusStats) {
+      bonuses[`${stat}Mult`] = Math.round(pctPerStat * 10000) / 10000;
+    }
+    const namePool = CULT.EQUIPMENT_NAME_POOL[slot] || ['神秘装备'];
+    const name = `${rarity.name}${CULT.utils.pick(namePool)}`;
+    return { slot, level: monsterLevel, rarity: rarity.id, bonuses, name };
   },
 
   getConsumable(id) {
@@ -404,11 +425,8 @@ CULT.Data = {
     return CULT.utils.weightedPick(CULT.FABAO, (f) => weights[f.rarity] || 1);
   },
 
-  // 商店买入价：装备/法宝/材料按稀有度定价，丹药用固定 price 字段
+  // 商店买入价：法宝/材料按稀有度定价，丹药用固定 price 字段。装备不再上架商店，靠掉落获得
   getShopBuyPrice(itemId) {
-    if (itemId.startsWith('eq_')) {
-      return CULT.TUNING.rarityBasePrice[CULT.Data.getEquipment(itemId).rarity] * 3;
-    }
     if (itemId.startsWith('fabao_')) {
       return CULT.TUNING.rarityBasePrice[CULT.Data.getFabao(itemId).rarity] * 5;
     }
@@ -423,10 +441,16 @@ CULT.Data = {
     return Math.max(1, Math.floor(CULT.Data.getShopBuyPrice(itemId) * CULT.TUNING.shopSellRateOfBuyPrice));
   },
 
-  // 随机生成一批商店商品：装备/法宝/丹药/材料混合池
+  // 装备的出售价格：不再走商店目录，直接按这件实例自己的稀有度+等级算
+  getEquipmentSellPrice(instance) {
+    const rarity = CULT.EQUIPMENT_RARITIES.find((r) => r.id === instance.rarity) || CULT.EQUIPMENT_RARITIES[0];
+    const base = 15 * rarity.mult * (1 + instance.level * 0.08);
+    return Math.max(1, Math.floor(base));
+  },
+
+  // 随机生成一批商店商品：法宝/丹药/材料混合池（装备不再上架，只能靠掉落获得）
   generateShopStock(state) {
     const pool = [
-      ...CULT.EQUIPMENT.map((e) => ({ itemId: e.id, qty: 1 })),
       ...CULT.FABAO.map((f) => ({ itemId: f.id, qty: 1 })),
       ...CULT.CONSUMABLES.map((c) => ({ itemId: c.id, qty: CULT.utils.randInt(3, 5) })),
       ...CULT.MATERIALS.map((m) => ({ itemId: m.id, qty: CULT.utils.randInt(3, 6) })),

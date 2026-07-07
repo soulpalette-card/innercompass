@@ -212,8 +212,8 @@ CULT.UI = {
     const container = CULT.UI.el('equipped-slots');
     container.innerHTML = Object.entries(slotNames)
       .map(([slot, label]) => {
-        const itemId = state.equipped[slot];
-        const item = itemId ? CULT.Data.getEquipment(itemId) : null;
+        const instanceId = state.equipped[slot];
+        const item = instanceId ? state.equipment.owned.find((e) => e.instanceId === instanceId) : null;
         if (!item) {
           return `<div class="flex items-center gap-3 text-sm">
             <div class="item-icon">${CULT.Icons.slot(slot)}</div>
@@ -224,8 +224,8 @@ CULT.UI = {
         return `<div class="flex items-center gap-3 text-sm">
           <div class="item-icon rarity-${item.rarity}">${CULT.Icons.slot(slot)}</div>
           <div class="flex-1">
-            <div>${label}：<span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(itemId))}>${item.name}</span></div>
-            <div class="text-xs text-slate-400">${CULT.UI.equipmentBonusText(item)}</div>
+            <div>${label}：<span ${CULT.UI.tooltipAttr(CULT.UI.equipmentTooltipText(item))}>${item.name}</span> <span class="text-xs text-slate-500">Lv.${item.level}</span></div>
+            <div class="text-xs text-slate-400">${CULT.UI.multBonusText(item)}</div>
           </div>
           <button class="btn-secondary text-xs px-2 py-1" data-unequip-slot="${slot}">卸下</button>
         </div>`;
@@ -241,31 +241,33 @@ CULT.UI = {
   },
 
   renderInventory(state) {
-    const equipmentEntries = [];
     const consumableEntries = [];
     const materialEntries = [];
 
     for (const [id, count] of Object.entries(state.inventory)) {
       if (count <= 0) continue;
-      if (id.startsWith('eq_')) equipmentEntries.push([id, count]);
-      else if (id.startsWith('pill_')) consumableEntries.push([id, count]);
+      if (id.startsWith('pill_')) consumableEntries.push([id, count]);
       else if (id.startsWith('fabao_')) continue; // 法宝在专属的"法宝"页面里展示
       else materialEntries.push([id, count]);
     }
 
+    // 装备已经从"按ID堆叠的背包条目"变成 state.equipment.owned 里的一堆独立实例；
+    // 这里只展示还没穿上的（已装备的在角色页显示），每件都是唯一的，不再有 x{count}
+    const equippedIds = new Set(Object.values(state.equipped).filter(Boolean));
+    const unequippedGear = state.equipment.owned.filter((item) => !equippedIds.has(item.instanceId));
+
     const eqContainer = CULT.UI.el('inventory-equipment');
-    CULT.UI.el('inventory-equipment-empty').classList.toggle('hidden', equipmentEntries.length > 0);
-    eqContainer.innerHTML = equipmentEntries
-      .map(([id, count]) => {
-        const item = CULT.Data.getEquipment(id);
-        const bonusText = CULT.UI.equipmentBonusText(item);
-        const deltaText = CULT.UI.formatDelta(CULT.Combat.getEquipmentDelta(state, id), CULT.UI.STAT_LABELS, false);
+    CULT.UI.el('inventory-equipment-empty').classList.toggle('hidden', unequippedGear.length > 0);
+    eqContainer.innerHTML = unequippedGear
+      .map((item) => {
+        const bonusText = CULT.UI.multBonusText(item);
+        const deltaText = CULT.UI.formatDelta(CULT.Combat.getEquipmentDelta(state, item.instanceId), CULT.UI.MULT_STAT_LABELS, true);
         return `<div class="panel rarity-${item.rarity} border flex gap-3 items-center">
           <div class="item-icon rarity-${item.rarity}">${CULT.Icons.slot(item.slot)}</div>
           <div class="flex-1">
             <div class="flex items-center justify-between">
-              <span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(id), 'font-medium')}>${item.name} ${count > 1 ? `x${count}` : ''}</span>
-              <button class="btn-secondary text-xs px-2 py-1" data-equip="${id}">装备</button>
+              <span ${CULT.UI.tooltipAttr(CULT.UI.equipmentTooltipText(item), 'font-medium')}>${item.name} <span class="text-xs text-slate-500">Lv.${item.level}</span></span>
+              <button class="btn-secondary text-xs px-2 py-1" data-equip="${item.instanceId}">装备</button>
             </div>
             <div class="text-xs text-slate-400 mt-1">${bonusText}</div>
             <div class="text-xs mt-0.5">${deltaText}</div>
@@ -312,7 +314,6 @@ CULT.UI = {
     return id;
   },
 
-  STAT_LABELS: { hp: '气血', atk: '攻击', def: '防御', spd: '速度' },
   MULT_STAT_LABELS: { hpMult: '气血', atkMult: '攻击', defMult: '防御', spdMult: '速度' },
   RARITY_LABELS: { common: '普通', uncommon: '优良', rare: '精良', epic: '极品' },
 
@@ -323,15 +324,11 @@ CULT.UI = {
     return `class="${cls}" data-tip="${CULT.utils.escapeHtml(text)}"`;
   },
 
-  // 根据 id 前缀生成一段物品说明文字，供悬浮提示使用
+  // 根据 id 前缀生成一段物品说明文字，供悬浮提示使用（装备是实例，走单独的 equipmentTooltipText）
   itemTooltipText(itemId) {
-    if (itemId.startsWith('eq_')) {
-      const item = CULT.Data.getEquipment(itemId);
-      return `${item.name}（${CULT.UI.RARITY_LABELS[item.rarity] || item.rarity}）：${CULT.UI.equipmentBonusText(item)}`;
-    }
     if (itemId.startsWith('fabao_')) {
       const fabao = CULT.Data.getFabao(itemId);
-      return `${fabao.name}（${CULT.UI.RARITY_LABELS[fabao.rarity] || fabao.rarity}）：${CULT.UI.fabaoBonusText(fabao)}`;
+      return `${fabao.name}（${CULT.UI.RARITY_LABELS[fabao.rarity] || fabao.rarity}）：${CULT.UI.multBonusText(fabao)}`;
     }
     if (itemId.startsWith('pill_')) {
       const item = CULT.Data.getConsumable(itemId);
@@ -339,6 +336,11 @@ CULT.UI = {
     }
     const material = CULT.Data.getMaterial(itemId);
     return material ? `${material.name}：炼丹材料（${CULT.UI.RARITY_LABELS[material.rarity] || material.rarity}）` : itemId;
+  },
+
+  // 装备是实例对象，不是 id，走这个单独的分支
+  equipmentTooltipText(item) {
+    return `${item.name}（${CULT.UI.RARITY_LABELS[item.rarity] || item.rarity}）Lv.${item.level}：${CULT.UI.multBonusText(item)}`;
   },
 
   petTooltipText(pet) {
@@ -354,14 +356,9 @@ CULT.UI = {
     return `${type.name}·${stage.name}·${quality.name} Lv.${pet.level}：${effectText}`;
   },
 
-  equipmentBonusText(item) {
+  // 装备和法宝现在共用同一套百分比加成（xxxMult），用同一个函数格式化即可
+  multBonusText(item) {
     return Object.entries(item.bonuses)
-      .map(([k, v]) => `${CULT.UI.STAT_LABELS[k] || k}+${v}`)
-      .join(' ');
-  },
-
-  fabaoBonusText(fabao) {
-    return Object.entries(fabao.bonuses)
       .map(([k, v]) => `${CULT.UI.MULT_STAT_LABELS[k] || k}+${Math.round(v * 100)}%`)
       .join(' ');
   },
@@ -455,7 +452,7 @@ CULT.UI = {
           <div class="item-icon rarity-${fabao.rarity}">${CULT.Icons.category(cat)}</div>
           <div class="flex-1">
             <div>${label}类：<span ${CULT.UI.tooltipAttr(CULT.UI.itemTooltipText(fabaoId))}>${fabao.name}</span></div>
-            <div class="text-xs text-slate-400">${CULT.UI.fabaoBonusText(fabao)}</div>
+            <div class="text-xs text-slate-400">${CULT.UI.multBonusText(fabao)}</div>
           </div>
           <button class="btn-secondary text-xs px-2 py-1" data-unequip-fabao="${cat}">卸下</button>
         </div>`;
@@ -471,7 +468,7 @@ CULT.UI = {
     invContainer.innerHTML = owned
       .map(([id, count]) => {
         const fabao = CULT.Data.getFabao(id);
-        const bonusText = CULT.UI.fabaoBonusText(fabao);
+        const bonusText = CULT.UI.multBonusText(fabao);
         const deltaText = CULT.UI.formatDelta(CULT.Combat.getFabaoDelta(state, id), CULT.UI.MULT_STAT_LABELS, true);
         return `<div class="panel rarity-${fabao.rarity} border flex gap-3 items-center">
           <div class="item-icon rarity-${fabao.rarity}">${CULT.Icons.category(fabao.category)}</div>
@@ -615,24 +612,21 @@ CULT.UI = {
     fuseBtn.disabled = !canFuse;
   },
 
-  // 根据 id 前缀猜一个展示图标，商店/背包共用
+  // 根据 id 前缀猜一个展示图标，商店/背包共用（装备已经不走这套id体系，见 equipmentTooltipText 等专属函数）
   shopItemIcon(itemId) {
-    if (itemId.startsWith('eq_')) return CULT.Icons.slot(CULT.Data.getEquipment(itemId).slot);
     if (itemId.startsWith('fabao_')) return CULT.Icons.category(CULT.Data.getFabao(itemId).category);
     if (itemId.startsWith('pill_')) return CULT.Icons.pill(CULT.Data.getConsumable(itemId).type);
     return CULT.Icons.coin();
   },
 
   shopItemName(itemId) {
-    if (itemId.startsWith('eq_')) return CULT.Data.getEquipment(itemId).name;
     if (itemId.startsWith('fabao_')) return CULT.Data.getFabao(itemId).name;
     if (itemId.startsWith('pill_')) return CULT.Data.getConsumable(itemId).name;
     return CULT.UI.materialLabel(itemId);
   },
 
-  // 装备/法宝/材料都带稀有度，丹药目前没有稀有度概念，返回 null 时不加任何品阶样式
+  // 法宝/材料都带稀有度，丹药目前没有稀有度概念，返回 null 时不加任何品阶样式
   shopItemRarity(itemId) {
-    if (itemId.startsWith('eq_')) return CULT.Data.getEquipment(itemId).rarity;
     if (itemId.startsWith('fabao_')) return CULT.Data.getFabao(itemId).rarity;
     if (itemId.startsWith('pill_')) return null;
     const material = CULT.Data.getMaterial(itemId);
@@ -663,7 +657,7 @@ CULT.UI = {
     });
 
     const sellable = Object.entries(state.inventory).filter(
-      ([id, count]) => count > 0 && (id.startsWith('eq_') || id.startsWith('fabao_') || id.startsWith('pill_') || id.startsWith('mat_'))
+      ([id, count]) => count > 0 && (id.startsWith('fabao_') || id.startsWith('pill_') || id.startsWith('mat_'))
     );
     const sellContainer = CULT.UI.el('shop-sell-list');
     CULT.UI.el('shop-sell-empty').classList.toggle('hidden', sellable.length > 0);
@@ -682,6 +676,27 @@ CULT.UI = {
       .join('');
     sellContainer.querySelectorAll('[data-sell]').forEach((btn) => {
       btn.addEventListener('click', () => CULT.Game.sellItem(btn.dataset.sell, 1));
+    });
+
+    // 装备不再走 state.inventory 那套按id堆叠的出售逻辑，单独渲染（只列还没装备的，装备中的要先卸下才能卖）
+    const equippedIds = new Set(Object.values(state.equipped).filter(Boolean));
+    const sellableGear = state.equipment.owned.filter((item) => !equippedIds.has(item.instanceId));
+    const sellEquipmentContainer = CULT.UI.el('shop-sell-equipment');
+    CULT.UI.el('shop-sell-equipment-empty').classList.toggle('hidden', sellableGear.length > 0);
+    sellEquipmentContainer.innerHTML = sellableGear
+      .map((item) => {
+        const price = CULT.Data.getEquipmentSellPrice(item);
+        return `<div class="flex items-center justify-between panel rarity-${item.rarity} border">
+          <div>
+            <div ${CULT.UI.tooltipAttr(CULT.UI.equipmentTooltipText(item), 'font-medium')}>${item.name} <span class="text-xs text-slate-500">Lv.${item.level}</span></div>
+            <div class="text-xs text-slate-400">出售单价 ${price} 灵石</div>
+          </div>
+          <button class="btn-secondary text-xs px-2 py-1" data-sell-equipment="${item.instanceId}">出售</button>
+        </div>`;
+      })
+      .join('');
+    sellEquipmentContainer.querySelectorAll('[data-sell-equipment]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.sellEquipment(btn.dataset.sellEquipment));
     });
 
     CULT.UI.renderTechniqueList(state, 'shop-techniques-list');
@@ -770,8 +785,7 @@ CULT.UI = {
     } else if (event.type === 'victory') {
       const parts = [`获得 ${Math.floor(event.loot.exp)} 修为`, `${event.loot.stones} 灵石`];
       CULT.UI.appendLog(state, `你击败了${event.monsterName}！${parts.join('，')}。`, 'log-victory');
-      for (const eqId of event.loot.equipment) {
-        const item = CULT.Data.getEquipment(eqId);
+      for (const item of event.droppedEquipment) {
         CULT.UI.appendLog(state, `获得珍稀掉落：${item.name}！`, 'log-victory');
         CULT.UI.lootQueue.push({ name: item.name, iconHtml: CULT.Icons.slot(item.slot), label: '获得珍稀装备' });
       }
@@ -875,6 +889,7 @@ CULT.UI = {
     CULT.UI.el('offline-cultivation').textContent = CULT.utils.formatNumber(progress.cultivationGained);
     CULT.UI.el('offline-stones').textContent = CULT.utils.formatNumber(progress.stonesGained);
     CULT.UI.el('offline-kills').textContent = progress.estimatedKills;
+    CULT.UI.el('offline-equipment').textContent = progress.equipmentCount || 0;
     CULT.UI.el('offline-fabao').textContent = progress.fabaoCount || 0;
     CULT.UI.el('offline-pets').textContent = progress.petsCaptured || 0;
     CULT.UI.el('offline-breakthroughs').textContent = progress.breakthroughsDuringOffline || 0;

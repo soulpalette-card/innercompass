@@ -13,7 +13,8 @@ CULT.Offline = {
 
     let hp = 0, atk = 0, def = 0, expMid = 0, stonesMid = 0;
     const materialChances = {};
-    const equipmentChances = {};
+    const equipmentSlotChances = {}; // 按部位算，不再有固定id可以按（装备是掉落时现场生成的）
+    const equipmentSlotLevelSum = {}; // 加权等级总和，配合上面的 chance 求平均等级
     const fabaoChances = {};
     const petChances = {};
     const petLevels = {}; // 每个宠物种类固定绑定到它来源怪物的等级，不做加权平均
@@ -37,7 +38,9 @@ CULT.Offline = {
         materialChances[mat.id] = (materialChances[mat.id] || 0) + Math.min(1, mat.chance * materialMult) * w;
       }
       for (const eq of m.loot.equipment || []) {
-        equipmentChances[eq.id] = (equipmentChances[eq.id] || 0) + Math.min(1, eq.chance * equipMult) * w;
+        const chance = Math.min(1, eq.chance * equipMult) * w;
+        equipmentSlotChances[eq.slot] = (equipmentSlotChances[eq.slot] || 0) + chance;
+        equipmentSlotLevelSum[eq.slot] = (equipmentSlotLevelSum[eq.slot] || 0) + CULT.Data.getMonsterLevel(state, m.tier) * chance;
       }
       for (const fb of m.loot.fabao || []) {
         fabaoChances[fb.id] = (fabaoChances[fb.id] || 0) + Math.min(1, fb.chance * fabaoMult) * w;
@@ -48,7 +51,12 @@ CULT.Offline = {
       }
     });
 
-    return { hp, atk, def, expMid, stonesMid, materialChances, equipmentChances, fabaoChances, petChances, petLevels };
+    const equipmentSlotLevels = {};
+    for (const slot of Object.keys(equipmentSlotChances)) {
+      equipmentSlotLevels[slot] = equipmentSlotLevelSum[slot] / equipmentSlotChances[slot];
+    }
+
+    return { hp, atk, def, expMid, stonesMid, materialChances, equipmentSlotChances, equipmentSlotLevels, fabaoChances, petChances, petLevels };
   },
 
   // 期望次数的整数部分直接发放，小数部分按概率再抽一次，避免离线时间越长掉落量越"确定"而失真
@@ -84,10 +92,10 @@ CULT.Offline = {
       const count = CULT.Offline.grantExpectedCount(estimatedKills * chance);
       if (count > 0) materialsGained[matId] = count;
     }
-    const equipmentGained = {};
-    for (const [eqId, chance] of Object.entries(avgMonster.equipmentChances)) {
+    const equipmentSlotsGained = {};
+    for (const [slot, chance] of Object.entries(avgMonster.equipmentSlotChances)) {
       const count = CULT.Offline.grantExpectedCount(estimatedKills * chance);
-      if (count > 0) equipmentGained[eqId] = count;
+      if (count > 0) equipmentSlotsGained[slot] = count;
     }
     const fabaoGained = {};
     for (const [fbId, chance] of Object.entries(avgMonster.fabaoChances)) {
@@ -109,7 +117,8 @@ CULT.Offline = {
       cultivationGained,
       stonesGained,
       materialsGained,
-      equipmentGained,
+      equipmentSlotsGained,
+      equipmentSlotLevels: avgMonster.equipmentSlotLevels,
       fabaoGained,
       petsGained,
       petLevels: avgMonster.petLevels,
@@ -125,8 +134,11 @@ CULT.Offline = {
     for (const [id, count] of Object.entries(progress.materialsGained)) {
       state.inventory[id] = (state.inventory[id] || 0) + count;
     }
-    for (const [id, count] of Object.entries(progress.equipmentGained)) {
-      state.inventory[id] = (state.inventory[id] || 0) + count;
+    let equipmentCount = 0;
+    for (const [slot, count] of Object.entries(progress.equipmentSlotsGained)) {
+      const level = Math.max(1, Math.round(progress.equipmentSlotLevels[slot] || 1));
+      for (let i = 0; i < count; i++) CULT.Combat.dropEquipment(state, slot, level);
+      equipmentCount += count;
     }
     let fabaoCount = 0;
     for (const [id, count] of Object.entries(progress.fabaoGained)) {
@@ -139,6 +151,7 @@ CULT.Offline = {
     if (progress.estimatedKills > 0) {
       CULT.Combat.awardPetExp(state, CULT.TUNING.petExpPerVictory * progress.estimatedKills);
     }
+    progress.equipmentCount = equipmentCount;
     progress.fabaoCount = fabaoCount;
     progress.petsCaptured = progress.petsGained.length;
 

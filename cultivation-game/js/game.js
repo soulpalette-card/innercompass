@@ -49,19 +49,14 @@ CULT.Game = {
     CULT.State.save(CULT.Game.state);
   },
 
-  equipItem(itemId) {
+  // instanceId 指向 state.equipment.owned 里的一件装备；装备本身永远留在 owned 里，
+  // 装备/卸下只是把 state.equipped[slot] 这个指针改指向谁，没有数量增减
+  equipItem(instanceId) {
     const state = CULT.Game.state;
-    const item = CULT.Data.getEquipment(itemId);
+    const item = state.equipment.owned.find((e) => e.instanceId === instanceId);
     if (!item) return false;
-    if (!state.inventory[itemId] || state.inventory[itemId] <= 0) return false;
 
-    const previousItemId = state.equipped[item.slot];
-    state.equipped[item.slot] = itemId;
-    state.inventory[itemId] -= 1;
-    if (state.inventory[itemId] <= 0) delete state.inventory[itemId];
-    if (previousItemId) {
-      state.inventory[previousItemId] = (state.inventory[previousItemId] || 0) + 1;
-    }
+    state.equipped[item.slot] = instanceId;
 
     CULT.Game.saveNow();
     CULT.UI.refresh(state);
@@ -70,10 +65,25 @@ CULT.Game = {
 
   unequipItem(slot) {
     const state = CULT.Game.state;
-    const itemId = state.equipped[slot];
-    if (!itemId) return false;
+    if (!state.equipped[slot]) return false;
     state.equipped[slot] = null;
-    state.inventory[itemId] = (state.inventory[itemId] || 0) + 1;
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
+  // 卖掉一件未装备的装备实例，按稀有度+等级给灵石；如果正好装备着，先自动卸下再卖
+  sellEquipment(instanceId) {
+    const state = CULT.Game.state;
+    const item = state.equipment.owned.find((e) => e.instanceId === instanceId);
+    if (!item) return false;
+
+    for (const slot of Object.keys(state.equipped)) {
+      if (state.equipped[slot] === instanceId) state.equipped[slot] = null;
+    }
+    state.character.spiritStones += CULT.Data.getEquipmentSellPrice(item);
+    state.equipment.owned = state.equipment.owned.filter((e) => e.instanceId !== instanceId);
 
     CULT.Game.saveNow();
     CULT.UI.refresh(state);
