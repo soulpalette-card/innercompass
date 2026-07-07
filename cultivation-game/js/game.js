@@ -90,19 +90,16 @@ CULT.Game = {
     return true;
   },
 
-  equipFabao(fabaoId) {
+  // instanceId 指向 state.fabao.owned 里的一件法宝；法宝本身永远留在 owned 里，
+  // 装备/卸下只是把 state.equippedFabao[category] 这个指针改指向谁，没有数量增减（跟装备的 equipItem 是同一个套路）
+  equipFabao(instanceId) {
     const state = CULT.Game.state;
-    const fabao = CULT.Data.getFabao(fabaoId);
+    const instance = state.fabao.owned.find((f) => f.instanceId === instanceId);
+    if (!instance) return false;
+    const fabao = CULT.Data.getFabao(instance.fabaoId);
     if (!fabao) return false;
-    if (!state.inventory[fabaoId] || state.inventory[fabaoId] <= 0) return false;
 
-    const previousFabaoId = state.equippedFabao[fabao.category];
-    state.equippedFabao[fabao.category] = fabaoId;
-    state.inventory[fabaoId] -= 1;
-    if (state.inventory[fabaoId] <= 0) delete state.inventory[fabaoId];
-    if (previousFabaoId) {
-      state.inventory[previousFabaoId] = (state.inventory[previousFabaoId] || 0) + 1;
-    }
+    state.equippedFabao[fabao.category] = instanceId;
 
     CULT.Game.saveNow();
     CULT.UI.refresh(state);
@@ -111,10 +108,30 @@ CULT.Game = {
 
   unequipFabao(category) {
     const state = CULT.Game.state;
-    const fabaoId = state.equippedFabao[category];
-    if (!fabaoId) return false;
+    if (!state.equippedFabao[category]) return false;
     state.equippedFabao[category] = null;
-    state.inventory[fabaoId] = (state.inventory[fabaoId] || 0) + 1;
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
+  // 分解一件未装备的法宝，换回法宝点数；如果正好装备着，先自动卸下再分解
+  decomposeFabao(instanceId) {
+    const state = CULT.Game.state;
+    const refund = CULT.Combat.decomposeFabao(state, instanceId);
+    if (refund <= 0) return false;
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return refund;
+  },
+
+  // 花法宝点数升级一件法宝
+  upgradeFabao(instanceId) {
+    const state = CULT.Game.state;
+    const success = CULT.Combat.upgradeFabao(state, instanceId);
+    if (!success) return false;
 
     CULT.Game.saveNow();
     CULT.UI.refresh(state);
@@ -194,12 +211,31 @@ CULT.Game = {
     const state = CULT.Game.state;
     const tech = CULT.Data.getTechnique(techId);
     if (!tech) return false;
-    if (state.techniques.learned.includes(techId)) return false;
-    if (state.character.realmId < tech.minRealm) return false; // 境界不够，不能修习
+    if (state.techniques.learned[techId]) return false; // 已经修习过了
+    if (!CULT.Data.isTechniqueUnlocked(state, tech)) return false; // 境界/层数不够，还没解锁
     if (state.character.spiritStones < tech.cost) return false;
 
     state.character.spiritStones -= tech.cost;
-    state.techniques.learned.push(techId);
+    state.techniques.learned[techId] = 1;
+
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
+  // 花灵石把一门已修习的功法升一级，费用 = 修习花费 * 1.5^当前等级，最高10级
+  upgradeTechnique(techId) {
+    const state = CULT.Game.state;
+    const tech = CULT.Data.getTechnique(techId);
+    if (!tech) return false;
+    const level = state.techniques.learned[techId];
+    if (!level) return false; // 还没修习，不能升级
+    if (level >= CULT.TUNING.techniqueMaxLevel) return false;
+    const cost = CULT.Data.getTechniqueUpgradeCost(tech, level);
+    if (state.character.spiritStones < cost) return false;
+
+    state.character.spiritStones -= cost;
+    state.techniques.learned[techId] = level + 1;
 
     CULT.Game.saveNow();
     CULT.UI.refresh(state);
@@ -277,7 +313,12 @@ CULT.Game = {
     if (state.character.spiritStones < price) return false;
 
     state.character.spiritStones -= price;
-    state.inventory[itemId] = (state.inventory[itemId] || 0) + 1;
+    // 法宝走独立实例（同装备），不再按ID堆叠进背包
+    if (itemId.startsWith('fabao_')) {
+      CULT.Combat.dropFabao(state, itemId);
+    } else {
+      state.inventory[itemId] = (state.inventory[itemId] || 0) + 1;
+    }
     stockEntry.qty -= 1;
 
     CULT.Game.saveNow();
@@ -355,6 +396,7 @@ CULT.Game = {
         currentMonsterHpMax: state.combat.currentMonsterHpMax,
         currentMonsterAtk: state.combat.currentMonsterAtk,
         currentMonsterDef: state.combat.currentMonsterDef,
+        currentMonsterSpd: state.combat.currentMonsterSpd,
       };
     }
     const tierLabel = sanctumTier === 'demonlord' ? '魔王秘境' : '精英秘境';
@@ -366,6 +408,7 @@ CULT.Game = {
     state.combat.currentMonsterHpMax = instance.hp;
     state.combat.currentMonsterAtk = instance.atk;
     state.combat.currentMonsterDef = instance.def;
+    state.combat.currentMonsterSpd = instance.spd;
     state.combat.isEliteChallenge = true;
     state.combat.challengeTier = sanctumTier;
     state.combat.challengeRealmId = realmId;

@@ -142,7 +142,7 @@ CULT.Offline = {
     }
     let fabaoCount = 0;
     for (const [id, count] of Object.entries(progress.fabaoGained)) {
-      state.inventory[id] = (state.inventory[id] || 0) + count;
+      for (let i = 0; i < count; i++) CULT.Combat.dropFabao(state, id);
       fabaoCount += count;
     }
     for (const speciesId of progress.petsGained) {

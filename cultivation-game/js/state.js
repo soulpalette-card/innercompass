@@ -1,5 +1,5 @@
 CULT.SAVE_KEY = 'cultivation_game_save_v1';
-CULT.CURRENT_SAVE_VERSION = 3;
+CULT.CURRENT_SAVE_VERSION = 4;
 
 CULT.State = {
   createDefault() {
@@ -13,18 +13,20 @@ CULT.State = {
         subLevel: 1,
         cultivation: 0,
         spiritStones: 0,
+        fabaoPoints: 0, // 法宝分解/升级用的独立货币，见 CULT.Combat.decomposeFabao/upgradeFabao
         hp: null, // filled in by combat.recomputeStats on first load
         hpMax: null,
         restTicksRemaining: 0,
         alchemyBonuses: { hp: 0, atk: 0, def: 0, spd: 0 },
       },
       equipped: { weapon: null, armor: null, accessory: null, boots: null, gloves: null }, // 存的是 equipment.owned 里某个实例的 instanceId
-      equippedFabao: { attack: null, defense: null, boost: null },
+      equippedFabao: { attack: null, defense: null, boost: null }, // 存的是 fabao.owned 里某个实例的 instanceId
       equipment: { owned: [] }, // owned: [{ instanceId, slot, level, rarity, bonuses, name }]，掉落时现场生成，不再是按ID堆叠的目录
-      inventory: {}, // itemId -> count (covers fabao, consumables, materials; 装备已搬到 state.equipment)
-      techniques: { learned: ['tech_basic_qi'] }, // 所有已修习功法同时叠加生效
+      fabao: { owned: [] }, // owned: [{ instanceId, fabaoId, level, pointsInvested }]，同样是掉落/购买时生成独立实例，不再按ID堆叠
+      inventory: {}, // itemId -> count (covers consumables, materials; 装备/法宝已搬到各自的 owned 数组)
+      techniques: { learned: { tech_basic_qi: 1 } }, // techId -> 已修习等级（1~techniqueMaxLevel），存在于这个 map 里即视为已修习
       pets: { owned: [], activeIds: [] }, // owned: [{ instanceId, speciesId, level, exp, quality }]; activeIds: 最多3个出战宠物
-      combat: { currentMonsterId: null, currentMonsterHp: null, log: [], isEliteChallenge: false, challengeTier: null, challengeRealmId: null, pausedMonster: null },
+      combat: { currentMonsterId: null, currentMonsterHp: null, currentMonsterSpd: null, log: [], isEliteChallenge: false, challengeTier: null, challengeRealmId: null, pausedMonster: null },
       shop: { stock: [], refreshCost: 2, lastRefreshDate: '' },
       selectedMapId: null, // 未选择地图时，掉落倍率按 1 计算（见 CULT.Data.getMapLootMultiplier）
       selectedSanctumRealmId: null, // 未选择时，秘境挑战默认按玩家当前境界算（见 CULT.Game.startSanctumChallenge）
@@ -139,6 +141,56 @@ CULT.State = {
       }
 
       s.saveVersion = 3;
+      return s;
+    },
+
+    // v3 -> v4：功法从"已修习ID数组"改成"ID->等级"的map，支持逐级升级；
+    // 法宝从"按ID堆叠的背包物品"改成跟装备一样的独立实例，可以分解成法宝点数、再用点数升级。
+    // 法宝目录 CULT.FABAO 本身没有被删除（跟当年装备目录被删不一样），这里可以放心直接查当前 data.js。
+    4: (s) => {
+      // 功法：数组 -> map，每个已修习的功法按1级迁移
+      if (s.techniques && Array.isArray(s.techniques.learned)) {
+        const learnedMap = {};
+        for (const techId of s.techniques.learned) learnedMap[techId] = 1;
+        s.techniques.learned = learnedMap;
+      }
+      if (!s.techniques) s.techniques = { learned: { tech_basic_qi: 1 } };
+
+      // 法宝：按ID堆叠 -> 独立实例
+      s.fabao = s.fabao || { owned: [] };
+      s.character = s.character || {};
+      if (s.character.fabaoPoints == null) s.character.fabaoPoints = 0;
+
+      const makeFabaoInstance = (fabaoId) => ({
+        instanceId: `${fabaoId}_migrated_${CULT.utils.now()}_${Math.floor(Math.random() * 10000)}`,
+        fabaoId,
+        level: 0,
+        pointsInvested: 0,
+      });
+
+      if (s.equippedFabao) {
+        for (const cat of Object.keys(s.equippedFabao)) {
+          const oldFabaoId = s.equippedFabao[cat];
+          if (!oldFabaoId) continue;
+          const def = CULT.FABAO.find((f) => f.id === oldFabaoId);
+          if (!def) { s.equippedFabao[cat] = null; continue; }
+          const instance = makeFabaoInstance(oldFabaoId);
+          s.fabao.owned.push(instance);
+          s.equippedFabao[cat] = instance.instanceId;
+        }
+      }
+      if (s.inventory) {
+        for (const [id, count] of Object.entries(s.inventory)) {
+          if (!id.startsWith('fabao_')) continue;
+          const def = CULT.FABAO.find((f) => f.id === id);
+          if (def) {
+            for (let i = 0; i < count; i++) s.fabao.owned.push(makeFabaoInstance(id));
+          }
+          delete s.inventory[id];
+        }
+      }
+
+      s.saveVersion = 4;
       return s;
     },
   },

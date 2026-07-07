@@ -9,15 +9,17 @@ CULT.Combat = {
     const flatDef = alchemyBonuses.def || 0;
     const flatSpd = alchemyBonuses.spd || 0;
 
-    let hpMult = 0, atkMult = 0, defMult = 0, spdMult = 0, cultivationSpeedMult = 0;
-    for (const techId of state.techniques.learned) {
+    let hpMult = 0, atkMult = 0, defMult = 0, spdMult = 0, cultivationSpeedMult = 0, flatCultivationPerSecond = 0;
+    // 功法可以逐级升级，等级越高同一个功法的加成越强（1级=基础值，每多1级再多叠加一部分基础值）
+    for (const [techId, level] of Object.entries(state.techniques.learned)) {
       const tech = CULT.Data.getTechnique(techId);
       if (!tech) continue;
-      hpMult += tech.bonuses.hpMult || 0;
-      atkMult += tech.bonuses.atkMult || 0;
-      defMult += tech.bonuses.defMult || 0;
-      spdMult += tech.bonuses.spdMult || 0;
-      cultivationSpeedMult += tech.bonuses.cultivationSpeedMult || 0;
+      const levelMult = 1 + (Math.max(1, level) - 1) * CULT.TUNING.techniqueLevelBonusPct;
+      hpMult += (tech.bonuses.hpMult || 0) * levelMult;
+      atkMult += (tech.bonuses.atkMult || 0) * levelMult;
+      defMult += (tech.bonuses.defMult || 0) * levelMult;
+      spdMult += (tech.bonuses.spdMult || 0) * levelMult;
+      cultivationSpeedMult += (tech.bonuses.cultivationSpeedMult || 0) * levelMult;
     }
 
     // 装备：掉落时生成的百分比加成，跟法宝、功法用同一套 xxxMult 累加方式，不会随数值膨胀而失效
@@ -32,19 +34,23 @@ CULT.Combat = {
       spdMult += item.bonuses.spdMult || 0;
     }
 
+    // 法宝也是掉落/购买时生成的独立实例，可以单独升级；等级越高加成越强，跟功法用同一套比例公式
     for (const category of Object.keys(state.equippedFabao)) {
-      const fabaoId = state.equippedFabao[category];
-      if (!fabaoId) continue;
-      const fabao = CULT.Data.getFabao(fabaoId);
+      const instanceId = state.equippedFabao[category];
+      if (!instanceId) continue;
+      const instance = state.fabao.owned.find((f) => f.instanceId === instanceId);
+      if (!instance) continue;
+      const fabao = CULT.Data.getFabao(instance.fabaoId);
       if (!fabao) continue;
-      hpMult += fabao.bonuses.hpMult || 0;
-      atkMult += fabao.bonuses.atkMult || 0;
-      defMult += fabao.bonuses.defMult || 0;
-      spdMult += fabao.bonuses.spdMult || 0;
+      const levelMult = 1 + (instance.level || 0) * CULT.TUNING.fabaoLevelBonusPct;
+      hpMult += (fabao.bonuses.hpMult || 0) * levelMult;
+      atkMult += (fabao.bonuses.atkMult || 0) * levelMult;
+      defMult += (fabao.bonuses.defMult || 0) * levelMult;
+      spdMult += (fabao.bonuses.spdMult || 0) * levelMult;
     }
 
     // 出战宠物（最多3只）按类型把加成投入不同的地方：
-    // 陆地->气血/防御，飞行->修炼速度，海洋->自身出手伤害（见 getPetRoundDamage，这里不处理）
+    // 陆地->气血/防御，飞行->每秒固定修为（不是百分比，见 flatCultivationPerSecond），海洋->自身出手伤害（见 getPetRoundDamage，这里不处理）
     for (const petId of (state.pets.activeIds || []).slice(0, 3)) {
       const pet = state.pets.owned.find((p) => p.instanceId === petId);
       if (!pet) continue;
@@ -56,7 +62,7 @@ CULT.Combat = {
         hpMult += petBonus * CULT.TUNING.petLandStatWeight;
         defMult += petBonus * CULT.TUNING.petLandStatWeight;
       } else if (type === 'flying') {
-        cultivationSpeedMult += petBonus * CULT.TUNING.petFlyingCultivationWeight;
+        flatCultivationPerSecond += petBonus * CULT.TUNING.petFlyingCultivationWeight * CULT.TUNING.petFlyingCultivationFlatBase;
       }
       // sea 型宠物的加成完全体现在 getPetRoundDamage 里，这里不叠加任何 mult
     }
@@ -67,6 +73,7 @@ CULT.Combat = {
       def: Math.floor((base.def + flatDef) * (1 + defMult)),
       spd: Math.floor((base.spd + flatSpd) * (1 + spdMult)),
       cultivationSpeedMult,
+      flatCultivationPerSecond,
     };
   },
 
@@ -82,16 +89,70 @@ CULT.Combat = {
     return delta;
   },
 
-  // 同上，针对法宝（百分比加成）
-  getFabaoDelta(state, fabaoId) {
-    const fabao = CULT.Data.getFabao(fabaoId);
+  // 法宝实例当前的实际加成（已按等级放大过），法宝页展示、对比增减都用这份
+  getFabaoEffectiveBonuses(instance) {
+    const fabao = CULT.Data.getFabao(instance.fabaoId);
+    if (!fabao) return {};
+    const levelMult = 1 + (instance.level || 0) * CULT.TUNING.fabaoLevelBonusPct;
+    const result = {};
+    for (const [key, val] of Object.entries(fabao.bonuses)) result[key] = val * levelMult;
+    return result;
+  },
+
+  // 同上（对比某件未装备的法宝实例 vs 当前槽位已装备的实例），都按实际加成（含等级）比较
+  getFabaoDelta(state, instanceId) {
+    const instance = state.fabao.owned.find((f) => f.instanceId === instanceId);
+    const fabao = CULT.Data.getFabao(instance.fabaoId);
     const currentId = state.equippedFabao[fabao.category];
-    const current = currentId ? CULT.Data.getFabao(currentId) : null;
+    const current = currentId ? state.fabao.owned.find((f) => f.instanceId === currentId) : null;
+    const itemBonuses = CULT.Combat.getFabaoEffectiveBonuses(instance);
+    const currentBonuses = current ? CULT.Combat.getFabaoEffectiveBonuses(current) : {};
     const delta = {};
     for (const stat of ['hpMult', 'atkMult', 'defMult', 'spdMult']) {
-      delta[stat] = (fabao.bonuses[stat] || 0) - (current ? current.bonuses[stat] || 0 : 0);
+      delta[stat] = (itemBonuses[stat] || 0) - (currentBonuses[stat] || 0);
     }
     return delta;
+  },
+
+  // 掉落/购买一件法宝：0级的新实例，跟装备/宠物一样，掉落时才生成独立个体
+  dropFabao(state, fabaoId) {
+    const instance = { instanceId: `${fabaoId}_${CULT.utils.now()}_${Math.floor(Math.random() * 10000)}`, fabaoId, level: 0, pointsInvested: 0 };
+    state.fabao.owned.push(instance);
+    return instance;
+  },
+
+  // 分解一件法宝，换回法宝点数：基础点数（按稀有度）+ 这件法宝已经投入升级的全部点数
+  decomposeFabao(state, instanceId) {
+    const instance = state.fabao.owned.find((f) => f.instanceId === instanceId);
+    if (!instance) return 0;
+    const fabao = CULT.Data.getFabao(instance.fabaoId);
+    const basePoints = CULT.TUNING.fabaoDecomposeBasePoints[fabao ? fabao.rarity : 'common'] || 0;
+    const refund = basePoints + (instance.pointsInvested || 0);
+    for (const category of Object.keys(state.equippedFabao)) {
+      if (state.equippedFabao[category] === instanceId) state.equippedFabao[category] = null;
+    }
+    state.fabao.owned = state.fabao.owned.filter((f) => f.instanceId !== instanceId);
+    state.character.fabaoPoints = (state.character.fabaoPoints || 0) + refund;
+    return refund;
+  },
+
+  // 花法宝点数把一件法宝升一级，花费 = 该法宝稀有度的基础花费 * 1.5^当前等级，随等级递增
+  getFabaoUpgradeCost(instance) {
+    const fabao = CULT.Data.getFabao(instance.fabaoId);
+    const baseCost = CULT.TUNING.fabaoLevelBaseCost[fabao ? fabao.rarity : 'common'] || 0;
+    return Math.floor(baseCost * Math.pow(CULT.TUNING.fabaoLevelCostGrowth, instance.level || 0));
+  },
+
+  upgradeFabao(state, instanceId) {
+    const instance = state.fabao.owned.find((f) => f.instanceId === instanceId);
+    if (!instance) return false;
+    if (instance.level >= CULT.TUNING.fabaoMaxLevel) return false;
+    const cost = CULT.Combat.getFabaoUpgradeCost(instance);
+    if ((state.character.fabaoPoints || 0) < cost) return false;
+    state.character.fabaoPoints -= cost;
+    instance.level += 1;
+    instance.pointsInvested = (instance.pointsInvested || 0) + cost;
+    return true;
   },
 
   // 掉落一件装备：按部位+怪物等级现场生成属性，推入 owned 并返回，跟 capturePet 是同一个套路
@@ -128,7 +189,9 @@ CULT.Combat = {
     const idx = CULT.Data.getGlobalLevelIndex(state.character.realmId, state.character.subLevel);
     const levelGrowth = Math.pow(CULT.TUNING.cultivationPerSecondLevelGrowth, idx);
     const mult = 1 + (stats ? stats.cultivationSpeedMult : 0);
-    return CULT.TUNING.cultivationPerSecondBase * levelGrowth * mult;
+    // 飞行宠物的加成是每秒固定修为，不参与百分比乘算，直接加在最后
+    const flatBonus = stats ? (stats.flatCultivationPerSecond || 0) : 0;
+    return CULT.TUNING.cultivationPerSecondBase * levelGrowth * mult + flatBonus;
   },
 
   // 根据玩家当前境界基础属性 + 怪物倍率 + 难度系数，生成一只怪物的战斗属性快照
@@ -139,6 +202,8 @@ CULT.Combat = {
       ? CULT.Data.getBaseStats(overrideRealmId, CULT.Data.getMaxSubLevel(overrideRealmId))
       : CULT.Data.getBaseStats(state.character.realmId, state.character.subLevel);
     const tierMult = (CULT.TUNING.monsterDifficultyByTier[monsterDef.tier] || 1) * (extraMult || 1);
+    // 怪物数据目前没有单独配速度倍率，没配的话就借用攻击倍率——避免给现有22只怪物逐个补字段
+    const spdMult = monsterDef.mult.spd != null ? monsterDef.mult.spd : monsterDef.mult.atk;
     return {
       id: monsterDef.id,
       name: monsterDef.name,
@@ -146,6 +211,7 @@ CULT.Combat = {
       hp: Math.max(1, Math.floor(playerBase.hp * monsterDef.mult.hp * tierMult)),
       atk: Math.max(1, Math.floor(playerBase.atk * monsterDef.mult.atk * tierMult)),
       def: Math.max(0, Math.floor(playerBase.def * monsterDef.mult.def * tierMult)),
+      spd: Math.max(1, Math.floor(playerBase.spd * spdMult * tierMult)),
     };
   },
 
@@ -327,22 +393,54 @@ CULT.Combat = {
       state.combat.currentMonsterHpMax = instance.hp;
       state.combat.currentMonsterAtk = instance.atk;
       state.combat.currentMonsterDef = instance.def;
+      state.combat.currentMonsterSpd = instance.spd;
       return { type: 'monster_spawned', monster: instance };
     }
 
-    const playerDamage = Math.max(1, stats.atk - state.combat.currentMonsterDef);
-    const monsterDamage = Math.max(1, state.combat.currentMonsterAtk - stats.def);
+    const basePlayerDamage = Math.max(1, stats.atk - state.combat.currentMonsterDef);
+    const baseMonsterDamage = Math.max(1, state.combat.currentMonsterAtk - stats.def);
     const petDamage = CULT.Combat.getActivePetsRoundDamage(state);
 
-    state.combat.currentMonsterHp -= (playerDamage + petDamage);
-    character.hp -= monsterDamage; // 宠物不承受怪物的反击，只有玩家自己会掉血
+    // 速度快的一方本回合先出手；如果先手这下就能分出胜负，另一方这回合就不再补刀
+    const playerSpd = stats.spd;
+    const monsterSpd = state.combat.currentMonsterSpd || 1;
+    const playerFirst = playerSpd >= monsterSpd;
+    const extraAttackChance = (fastSpd, slowSpd) => Math.min(
+      CULT.TUNING.extraAttackChanceCap,
+      Math.max(0, (fastSpd - slowSpd) / slowSpd) * CULT.TUNING.extraAttackSpeedFactor
+    );
+    const playerExtraHit = playerFirst && Math.random() < extraAttackChance(playerSpd, monsterSpd);
+    const monsterExtraHit = !playerFirst && Math.random() < extraAttackChance(monsterSpd, playerSpd);
+    const playerDamage = basePlayerDamage * (playerExtraHit ? 2 : 1);
+    const monsterDamage = baseMonsterDamage * (monsterExtraHit ? 2 : 1);
+
+    let playerDamageDealt = 0;
+    let monsterDamageDealt = 0;
+    if (playerFirst) {
+      state.combat.currentMonsterHp -= (playerDamage + petDamage);
+      playerDamageDealt = playerDamage + petDamage;
+      if (state.combat.currentMonsterHp > 0) {
+        character.hp -= monsterDamage; // 宠物不承受怪物的反击，只有玩家自己会掉血
+        monsterDamageDealt = monsterDamage;
+      }
+    } else {
+      character.hp -= monsterDamage;
+      monsterDamageDealt = monsterDamage;
+      if (character.hp > 0) {
+        state.combat.currentMonsterHp -= (playerDamage + petDamage);
+        playerDamageDealt = playerDamage + petDamage;
+      }
+    }
 
     const event = {
       type: 'round',
-      playerDamage,
+      playerDamage: playerDamageDealt,
       petDamage,
-      monsterDamage,
+      monsterDamage: monsterDamageDealt,
       monsterName: state.combat.currentMonsterName,
+      playerFirst,
+      playerExtraHit,
+      monsterExtraHit,
     };
 
     if (state.combat.currentMonsterHp <= 0) {
@@ -367,7 +465,7 @@ CULT.Combat = {
         state.combat.challengeRealmId = null;
       }
       for (const fbId of loot.fabao) {
-        state.inventory[fbId] = (state.inventory[fbId] || 0) + 1;
+        CULT.Combat.dropFabao(state, fbId);
       }
       const capturedPets = loot.pets.map((speciesId) => CULT.Combat.capturePet(state, speciesId, monsterLevel));
       state.stats.totalBattlesWon += 1;

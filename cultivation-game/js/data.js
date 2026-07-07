@@ -59,6 +59,30 @@ CULT.TUNING = {
 
   monsterTierLevelOffset: { weak: -5, normal: 0, elite: 8, boss: 20 }, // 纯展示用，不影响实际战斗数值
 
+  // 速度决定先手：更快的一方本回合先出手，如果这一下就分出胜负，另一方这回合就不再补刀；
+  // 速度优势越大，越快的一方还有几率打出连击（额外多打一次），几率有上限，只有更快的一方才有机会连击
+  extraAttackSpeedFactor: 0.6,
+  extraAttackChanceCap: 0.5,
+
+  // 功法：每3个全局小层解锁1个普通功法，每跨1个大境界解锁1个更强的功法；每个功法可单独升级，最高10级
+  techniqueMaxLevel: 10,
+  techniqueLevelCostGrowth: 1.5, // 每升一级，灵石花费在上一级基础上乘这个倍数
+  techniqueLevelBonusPct: 0.12, // 每级比1级多叠加基础加成的这个比例（10级 = 基础值 * (1+9*0.12) ≈ 2.08倍）
+  techniqueMinorUnlockEveryLevels: 3,
+  techniqueMinorBaseCost: 60,
+  techniqueRealmCostGrowth: 16, // 沿用怪物掉落同款的"每境界约16倍"曲线，让功法花费跟灵石收入同步膨胀
+  techniqueMajorCostMultOfMinor: 6, // 大境界功法比同境界普通功法的基础花费再贵这么多倍
+
+  // 法宝：分解返还法宝点数，点数可用来升级，最高10级；分解已升级的法宝会把投入的点数全部退还
+  fabaoMaxLevel: 10,
+  fabaoLevelCostGrowth: 1.5,
+  fabaoLevelBonusPct: 0.12,
+  fabaoDecomposeBasePoints: { common: 20, uncommon: 60, rare: 220, epic: 900 },
+  fabaoLevelBaseCost: { common: 15, uncommon: 40, rare: 100, epic: 250 }, // 0级升到1级需要的点数，稀有度越高越贵
+
+  // 飞行宠物：修炼速度加成从百分比改成每秒固定修为，跟其他修炼速度加成（百分比）分开计算
+  petFlyingCultivationFlatBase: 2,
+
   eliteChallengeBaseCost: 50,
   eliteChallengeCostGrowth: 1.4, // 每跨一个大境界，挑战花费按此倍率增长
   eliteChallengeExtraMult: 1.5, // 精英关卡怪物在原有难度系数基础上再乘的强化倍率
@@ -296,12 +320,67 @@ CULT.PET_QUALITIES = [
   { id: 'epic', name: '极品', weight: 3, statMult: 1.6 },
 ];
 
-// 功法：被动加成，所有已修习的功法同时生效（叠加），修习需要消耗灵石
-CULT.TECHNIQUES = [
-  { id: 'tech_basic_qi', name: '基础吐纳诀', desc: '修炼速度 +10%。', cost: 0, minRealm: 0, bonuses: { cultivationSpeedMult: 0.10 } },
-  { id: 'tech_iron_body', name: '玄铁炼体诀', desc: '气血 +20%，防御 +10%。', cost: 300, minRealm: 0, bonuses: { hpMult: 0.20, defMult: 0.10 } },
-  { id: 'tech_sword_heart', name: '一念剑心诀', desc: '攻击 +20%。', cost: 600, minRealm: 1, bonuses: { atkMult: 0.20 } },
+// 功法：被动加成，所有已修习的功法同时生效（叠加），修习需要消耗灵石，可单独升级（见 CULT.TUNING.techniqueMaxLevel）
+// 这3个是最初的手写功法，id 不能改（旧存档已经修习过），后面每3个全局小层解锁1个普通功法、每跨1个大境界解锁1个更强的
+// 大境界功法，是按 CULT.REALMS 现场生成的，不用逐个手写
+CULT.TECHNIQUES_BASE = [
+  { id: 'tech_basic_qi', name: '基础吐纳诀', desc: '修炼速度 +10%。', cost: 0, minRealm: 0, minSubLevel: 1, bonuses: { cultivationSpeedMult: 0.10 } },
+  { id: 'tech_iron_body', name: '玄铁炼体诀', desc: '气血 +20%，防御 +10%。', cost: 300, minRealm: 0, minSubLevel: 1, bonuses: { hpMult: 0.20, defMult: 0.10 } },
+  { id: 'tech_sword_heart', name: '一念剑心诀', desc: '攻击 +20%。', cost: 600, minRealm: 1, minSubLevel: 1, bonuses: { atkMult: 0.20 } },
 ];
+
+CULT.TECHNIQUE_NAME_POOLS = {
+  minor: ['养气诀', '炼骨诀', '聚灵诀', '固元诀', '导息诀', '凝神诀', '行气诀', '守一诀', '归真诀', '清心诀', '藏锋诀', '纳息诀'],
+  major: ['天罡诀', '紫霄诀', '太一诀', '混元诀', '九转诀', '轮回诀', '造化诀', '大道诀'],
+};
+CULT.TECHNIQUE_STAT_CYCLE = ['atkMult', 'defMult', 'hpMult', 'spdMult', 'cultivationSpeedMult'];
+CULT.TECHNIQUE_STAT_LABELS = { atkMult: '攻击', defMult: '防御', hpMult: '气血', spdMult: '速度', cultivationSpeedMult: '修炼速度' };
+
+// 按境界现场生成功法目录：每3个全局小层解锁1个普通功法，每跨1个大境界（不含练气境自己）解锁1个更强的大境界功法
+CULT.generateTechniques = function () {
+  const generated = [...CULT.TECHNIQUES_BASE];
+  let minorCount = 0;
+  let majorCount = 0;
+  let globalLevelsReached = 0;
+  for (let realmId = 0; realmId < CULT.REALMS.length; realmId++) {
+    const subLevels = CULT.REALMS[realmId].subLevels;
+    if (realmId > 0) {
+      const realmCostBase = CULT.TUNING.techniqueMinorBaseCost * Math.pow(CULT.TUNING.techniqueRealmCostGrowth, realmId);
+      const stat = CULT.TECHNIQUE_STAT_CYCLE[majorCount % CULT.TECHNIQUE_STAT_CYCLE.length];
+      const bonusValue = Math.round((0.3 + majorCount * 0.05) * 100) / 100;
+      generated.push({
+        id: `tech_major_${realmId}`,
+        name: CULT.TECHNIQUE_NAME_POOLS.major[majorCount % CULT.TECHNIQUE_NAME_POOLS.major.length],
+        desc: `${CULT.TECHNIQUE_STAT_LABELS[stat]} +${Math.round(bonusValue * 100)}%。`,
+        cost: Math.floor(realmCostBase * CULT.TUNING.techniqueMajorCostMultOfMinor),
+        minRealm: realmId,
+        minSubLevel: 1,
+        bonuses: { [stat]: bonusValue },
+      });
+      majorCount++;
+    }
+    for (let subLevel = 1; subLevel <= subLevels; subLevel++) {
+      globalLevelsReached++;
+      if (globalLevelsReached % CULT.TUNING.techniqueMinorUnlockEveryLevels !== 0) continue;
+      const realmCostBase = CULT.TUNING.techniqueMinorBaseCost * Math.pow(CULT.TUNING.techniqueRealmCostGrowth, realmId);
+      const stat = CULT.TECHNIQUE_STAT_CYCLE[minorCount % CULT.TECHNIQUE_STAT_CYCLE.length];
+      const bonusValue = Math.round((0.08 + Math.floor(minorCount / CULT.TECHNIQUE_STAT_CYCLE.length) * 0.02) * 100) / 100;
+      generated.push({
+        id: `tech_minor_${realmId}_${subLevel}`,
+        name: CULT.TECHNIQUE_NAME_POOLS.minor[minorCount % CULT.TECHNIQUE_NAME_POOLS.minor.length],
+        desc: `${CULT.TECHNIQUE_STAT_LABELS[stat]} +${Math.round(bonusValue * 100)}%。`,
+        cost: Math.floor(realmCostBase * (1 + (minorCount % 3) * 0.3)),
+        minRealm: realmId,
+        minSubLevel: subLevel,
+        bonuses: { [stat]: bonusValue },
+      });
+      minorCount++;
+    }
+  }
+  return generated;
+};
+
+CULT.TECHNIQUES = CULT.generateTechniques();
 
 // 属性说明文字，供悬浮提示使用
 CULT.STAT_DESCRIPTIONS = {
@@ -420,6 +499,18 @@ CULT.Data = {
     return CULT.TECHNIQUES.find((t) => t.id === id);
   },
 
+  // 功法是否已经解锁（按全局小层数比较，不只是看大境界，因为普通功法是按小层解锁的）
+  isTechniqueUnlocked(state, tech) {
+    const requiredIdx = CULT.Data.getGlobalLevelIndex(tech.minRealm, tech.minSubLevel || 1);
+    const currentIdx = CULT.Data.getGlobalLevelIndex(state.character.realmId, state.character.subLevel);
+    return currentIdx >= requiredIdx;
+  },
+
+  // 升级花费 = 修习花费 * 1.5^当前等级，随等级递增
+  getTechniqueUpgradeCost(tech, level) {
+    return Math.floor(tech.cost * Math.pow(CULT.TUNING.techniqueLevelCostGrowth, level));
+  },
+
   getEligibleMonsters(realmId) {
     const window = CULT.TUNING.monsterRealmWindowBehind;
     return CULT.MONSTERS.filter(
@@ -457,6 +548,13 @@ CULT.Data = {
 
   getMaterial(id) {
     return CULT.MATERIALS.find((m) => m.id === id);
+  },
+
+  // 哪些怪物会掉落这个材料，供炼丹页悬浮提示用；按怪物在 CULT.MONSTERS 里的出场顺序返回名字列表
+  getMaterialSources(matId) {
+    return CULT.MONSTERS
+      .filter((m) => (m.loot.materials || []).some((mat) => mat.id === matId))
+      .map((m) => m.name);
   },
 
   getRecipe(id) {

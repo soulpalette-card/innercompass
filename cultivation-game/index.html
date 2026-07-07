@@ -79,11 +79,21 @@
         <div><div id="main-stat-label-def" class="text-slate-500">防御</div><div id="main-stat-def" class="mt-0.5 font-medium"></div></div>
         <div><div id="main-stat-label-spd" class="text-slate-500">速度</div><div id="main-stat-spd" class="mt-0.5 font-medium"></div></div>
       </div>
+      <div class="grid grid-cols-3 gap-2 text-center text-xs mt-3 pt-3 border-t border-slate-800">
+        <div><div class="text-slate-500">综合战力</div><div id="main-combat-power" class="mt-0.5 font-medium text-amber-300"></div></div>
+        <div><div class="text-slate-500">已修习功法</div><div id="main-tech-summary" class="mt-0.5 font-medium"></div></div>
+        <div><div class="text-slate-500">法宝点数</div><div id="main-fabao-points" class="mt-0.5 font-medium"></div></div>
+      </div>
     </div>
 
     <div class="panel">
       <div class="text-xs text-slate-500 mb-2">出战宠物</div>
       <div id="main-pet-chips" class="flex gap-2 text-xs"></div>
+    </div>
+
+    <div class="panel">
+      <div class="text-xs text-slate-500 mb-2">已装备法宝</div>
+      <div id="main-fabao-chips" class="flex gap-2 text-xs"></div>
     </div>
 
     <div class="panel">
@@ -165,12 +175,17 @@
 
   <!-- 法宝 -->
   <section id="fabao-screen" class="screen space-y-4" style="display:none">
+    <div class="panel flex items-center justify-between text-sm">
+      <span class="text-slate-400">法宝点数（分解法宝获得，可用于升级法宝）</span>
+      <span id="fabao-points-text" class="font-medium text-amber-300">0</span>
+    </div>
     <div class="panel">
       <h2 class="font-serif-sc text-lg text-amber-300 mb-3">法宝槽位</h2>
       <div id="fabao-slots" class="space-y-2"></div>
     </div>
     <div class="panel">
       <h2 class="font-serif-sc text-lg text-amber-300 mb-3">未装备法宝</h2>
+      <p class="text-xs text-slate-500 mb-2">分解法宝可换回法宝点数（已升级的法宝分解会把投入的点数全部退还）；点数可以用来升级其他法宝，最高10级。</p>
       <div id="fabao-inventory" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm"></div>
       <div id="fabao-inventory-empty" class="text-slate-500 text-sm hidden">暂无法宝</div>
     </div>
