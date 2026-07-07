@@ -125,18 +125,19 @@ CULT.Combat = {
   },
 
   getCultivationPerSecond(state, stats) {
-    const realmGrowth = Math.pow(
-      CULT.TUNING.cultivationPerSecondRealmGrowth,
-      state.character.realmId
-    );
+    const idx = CULT.Data.getGlobalLevelIndex(state.character.realmId, state.character.subLevel);
+    const levelGrowth = Math.pow(CULT.TUNING.cultivationPerSecondLevelGrowth, idx);
     const mult = 1 + (stats ? stats.cultivationSpeedMult : 0);
-    return CULT.TUNING.cultivationPerSecondBase * realmGrowth * mult;
+    return CULT.TUNING.cultivationPerSecondBase * levelGrowth * mult;
   },
 
   // 根据玩家当前境界基础属性 + 怪物倍率 + 难度系数，生成一只怪物的战斗属性快照
   // extraMult 可选，供精英关卡等场景在原有难度系数上再乘一个强化倍率
-  instantiateMonster(monsterDef, state, extraMult) {
-    const playerBase = CULT.Data.getBaseStats(state.character.realmId, state.character.subLevel);
+  // overrideRealmId 可选，供秘境挑战指定境界（挑战别的境界的秘境时，不按玩家自己当前境界算）
+  instantiateMonster(monsterDef, state, extraMult, overrideRealmId) {
+    const playerBase = overrideRealmId != null
+      ? CULT.Data.getBaseStats(overrideRealmId, CULT.Data.getMaxSubLevel(overrideRealmId))
+      : CULT.Data.getBaseStats(state.character.realmId, state.character.subLevel);
     const tierMult = (CULT.TUNING.monsterDifficultyByTier[monsterDef.tier] || 1) * (extraMult || 1);
     return {
       id: monsterDef.id,
@@ -346,7 +347,9 @@ CULT.Combat = {
 
     if (state.combat.currentMonsterHp <= 0) {
       const monsterDef = CULT.MONSTERS.find((m) => m.id === state.combat.currentMonsterId);
-      const monsterLevel = CULT.Data.getMonsterLevel(state, monsterDef.tier); // 装备要按这只怪的等级生成，提前算好
+      // 秘境挑战按选定的境界算掉落等级，不按玩家自己的境界（否则挑战低境界秘境也能刷到跟玩家等级绑定的装备，失去分境界的意义）
+      const lootLevelOverride = state.combat.isEliteChallenge ? state.combat.challengeRealmId : null;
+      const monsterLevel = CULT.Data.getMonsterLevel(state, monsterDef.tier, lootLevelOverride); // 装备要按这只怪的等级生成，提前算好
       const loot = CULT.Combat.rollLoot(monsterDef, state);
       character.cultivation += loot.exp;
       character.spiritStones += loot.stones;
@@ -361,6 +364,7 @@ CULT.Combat = {
         if (isDemonLord) loot.fabao.push(CULT.Data.rollWeightedFabao(true).id);
         state.combat.isEliteChallenge = false;
         state.combat.challengeTier = null;
+        state.combat.challengeRealmId = null;
       }
       for (const fbId of loot.fabao) {
         state.inventory[fbId] = (state.inventory[fbId] || 0) + 1;
@@ -381,6 +385,7 @@ CULT.Combat = {
       character.restTicksRemaining = CULT.TUNING.restTicksAfterDefeat;
       state.combat.isEliteChallenge = false; // 挑战失败：灵石已消耗，不补发，清掉标记避免遗留
       state.combat.challengeTier = null;
+      state.combat.challengeRealmId = null;
       CULT.Combat.endEncounter(state);
 
       event.type = 'defeat';

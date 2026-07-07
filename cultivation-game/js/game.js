@@ -233,6 +233,17 @@ CULT.Game = {
     return true;
   },
 
+  // 选择要挑战哪个境界的秘境；不设解锁门槛，任何境界都能选
+  selectSanctumRealm(realmId) {
+    const state = CULT.Game.state;
+    if (realmId < 0 || realmId >= CULT.REALMS.length) return false;
+
+    state.selectedSanctumRealmId = realmId;
+    CULT.Game.saveNow();
+    CULT.UI.refresh(state);
+    return true;
+  },
+
   // 每天第一次进入/tick 到时，重置刷新费用并重新生成商店库存
   ensureShopFresh() {
     const state = CULT.Game.state;
@@ -312,20 +323,25 @@ CULT.Game = {
   },
 
   // tier: 'elite'（默认）| 'demonlord'——魔王秘境花费更高、怪物更强、奖励更好
-  startSanctumChallenge(tier) {
+  // targetRealmId 可选，指定要挑战哪个境界的秘境；不传则默认玩家当前境界。
+  // 不要求玩家已达到该境界——秘境挑战不设解锁门槛，能不能打得过由玩家自己判断
+  startSanctumChallenge(tier, targetRealmId) {
     const sanctumTier = tier === 'demonlord' ? 'demonlord' : 'elite';
     const state = CULT.Game.state;
     if (state.combat.isEliteChallenge) return false; // 已经在挑战中（无论哪个秘境），不能再叠一层
     if (state.character.restTicksRemaining > 0) return false; // 闭关疗养中不能挑战
 
-    const cost = CULT.Data.getSanctumCost(state.character.realmId, sanctumTier);
+    const realmId = targetRealmId != null ? targetRealmId : state.character.realmId;
+    if (realmId < 0 || realmId >= CULT.REALMS.length) return false;
+
+    const cost = CULT.Data.getSanctumCost(realmId, sanctumTier);
     if (state.character.spiritStones < cost) return false;
 
-    const bossPool = CULT.MONSTERS.filter((m) => m.tier === 'boss' && m.minRealm <= state.character.realmId);
-    const elitePool = CULT.MONSTERS.filter((m) => m.tier === 'elite' && m.minRealm <= state.character.realmId);
+    const bossPool = CULT.MONSTERS.filter((m) => m.tier === 'boss' && m.minRealm <= realmId);
+    const elitePool = CULT.MONSTERS.filter((m) => m.tier === 'elite' && m.minRealm <= realmId);
     const pool = bossPool.length > 0 ? bossPool : (elitePool.length > 0 ? elitePool : CULT.MONSTERS);
     const monsterDef = CULT.utils.pick(pool);
-    const instance = CULT.Combat.instantiateMonster(monsterDef, state, CULT.Data.getSanctumExtraMult(sanctumTier));
+    const instance = CULT.Combat.instantiateMonster(monsterDef, state, CULT.Data.getSanctumExtraMult(sanctumTier), realmId);
 
     state.character.spiritStones -= cost;
     // 如果当前有普通战斗在进行，先把它的状态存起来，挑战结束后自动恢复
@@ -341,8 +357,9 @@ CULT.Game = {
       };
     }
     const tierLabel = sanctumTier === 'demonlord' ? '魔王秘境' : '精英秘境';
+    const realmName = CULT.Data.getRealm(realmId).name;
     state.combat.currentMonsterId = instance.id;
-    state.combat.currentMonsterName = instance.name + `（${tierLabel}）`;
+    state.combat.currentMonsterName = instance.name + `（${realmName}·${tierLabel}）`;
     state.combat.currentMonsterTier = instance.tier;
     state.combat.currentMonsterHp = instance.hp;
     state.combat.currentMonsterHpMax = instance.hp;
@@ -350,6 +367,7 @@ CULT.Game = {
     state.combat.currentMonsterDef = instance.def;
     state.combat.isEliteChallenge = true;
     state.combat.challengeTier = sanctumTier;
+    state.combat.challengeRealmId = realmId;
 
     CULT.Game.saveNow();
     CULT.UI.refresh(state);

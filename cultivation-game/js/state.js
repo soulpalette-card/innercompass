@@ -24,9 +24,10 @@ CULT.State = {
       inventory: {}, // itemId -> count (covers fabao, consumables, materials; 装备已搬到 state.equipment)
       techniques: { learned: ['tech_basic_qi'] }, // 所有已修习功法同时叠加生效
       pets: { owned: [], activeIds: [] }, // owned: [{ instanceId, speciesId, level, exp, quality }]; activeIds: 最多3个出战宠物
-      combat: { currentMonsterId: null, currentMonsterHp: null, log: [], isEliteChallenge: false, challengeTier: null, pausedMonster: null },
+      combat: { currentMonsterId: null, currentMonsterHp: null, log: [], isEliteChallenge: false, challengeTier: null, challengeRealmId: null, pausedMonster: null },
       shop: { stock: [], refreshCost: 2, lastRefreshDate: '' },
       selectedMapId: null, // 未选择地图时，掉落倍率按 1 计算（见 CULT.Data.getMapLootMultiplier）
+      selectedSanctumRealmId: null, // 未选择时，秘境挑战默认按玩家当前境界算（见 CULT.Game.startSanctumChallenge）
       settings: { autoBreakthrough: false },
       stats: { totalBattlesWon: 0, totalBreakthroughs: 0, totalBreakthroughFails: 0 },
       pendingBreakthroughBonus: 0, // consumed by next breakthrough attempt

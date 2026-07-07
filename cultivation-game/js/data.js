@@ -23,7 +23,7 @@ CULT.TUNING = {
   autosaveEveryTicks: 10,
 
   cultivationPerSecondBase: 3,
-  cultivationPerSecondRealmGrowth: 1.06, // 每跨一个大境界，基础修炼速度略微提升
+  cultivationPerSecondLevelGrowth: 1.03, // 按全局小层数连续成长（而不是只在跨大境界时才提升），避免同一境界内9层修炼速度都一样
 
   baseStats: { hp: 60, atk: 9, def: 4, spd: 5 },
   statGrowthPerLevel: 1.115, // 每小层的属性成长率（作用于全局层数）
@@ -182,6 +182,7 @@ CULT.CONSUMABLES = [
   { id: 'pill_ju_qi', name: '聚气丹', type: 'exp_boost', desc: '立即获得一定修为。', effect: { flatExp: 500 }, price: 80 },
   { id: 'pill_ning_qi', name: '凝气丹', type: 'exp_boost', desc: '立即获得一定修为，由3颗聚气丹融合而成。', effect: { flatExp: 1275 }, price: 200 },
   { id: 'pill_yuan_qi', name: '元气丹', type: 'exp_boost', desc: '立即获得大量修为，由3颗凝气丹融合而成。', effect: { flatExp: 3250 }, price: 500 },
+  { id: 'pill_taiyi', name: '太乙丹', type: 'exp_boost', desc: '立即获得海量修为，由3颗元气丹融合而成。', effect: { flatExp: 8300 }, price: 1250 },
   { id: 'pill_po_jing', name: '破境丹', type: 'breakthrough_boost', desc: '下一次突破成功率提升。', effect: { successChanceBonus: 0.15 }, price: 150 },
   { id: 'pill_liao_shang', name: '疗伤丹', type: 'heal', desc: '立即回复全部气血。', effect: { healPercent: 1.0 }, price: 50 },
   { id: 'pill_atk_boost', name: '锐金丹', type: 'stat_boost', desc: '永久提升攻击。', effect: { stat: 'atk', amount: 25 }, price: 200 },
@@ -214,6 +215,7 @@ CULT.RECIPES = [
   // 丹药融合：3颗低阶丹药融合成1颗更进阶的，"材料"就是丹药本身
   { id: 'recipe_qi_pill_fuse_mid', name: '凝气丹方（融合）', resultId: 'pill_ning_qi', resultCount: 1, materials: { pill_ju_qi: 3 } },
   { id: 'recipe_qi_pill_fuse_high', name: '元气丹方（融合）', resultId: 'pill_yuan_qi', resultCount: 1, materials: { pill_ning_qi: 3 } },
+  { id: 'recipe_qi_pill_fuse_highest', name: '太乙丹方（融合）', resultId: 'pill_taiyi', resultCount: 1, materials: { pill_yuan_qi: 3 } },
 ];
 
 // 宠物品质：复用现有的稀有度体系（common/uncommon/rare/epic），捕获时随机抽取
@@ -391,9 +393,12 @@ CULT.Data = {
     return CULT.RECIPES.find((r) => r.id === id);
   },
 
-  // 纯展示用的怪物等级：不影响 instantiateMonster 里的实际战斗数值
-  getMonsterLevel(state, tier) {
-    const idx = CULT.Data.getGlobalLevelIndex(state.character.realmId, state.character.subLevel);
+  // 怪物等级：用于装备/宠物掉落强度计算，不影响 instantiateMonster 里的实际战斗数值
+  // overrideRealmId 可选，供秘境挑战按选定的境界（而不是玩家自己的境界）算掉落等级
+  getMonsterLevel(state, tier, overrideRealmId) {
+    const realmId = overrideRealmId != null ? overrideRealmId : state.character.realmId;
+    const subLevel = overrideRealmId != null ? CULT.Data.getMaxSubLevel(overrideRealmId) : state.character.subLevel;
+    const idx = CULT.Data.getGlobalLevelIndex(realmId, subLevel);
     const offset = CULT.TUNING.monsterTierLevelOffset[tier] || 0;
     return Math.max(1, idx + 1 + offset);
   },

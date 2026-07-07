@@ -33,7 +33,9 @@ CULT.UI = {
     CULT.UI.el('shop-refresh-btn').addEventListener('click', CULT.Game.refreshShop);
     for (const tier of ['elite', 'demonlord']) {
       CULT.UI.el(`sanctum-challenge-btn-${tier}`).addEventListener('click', () => {
-        if (CULT.Game.startSanctumChallenge(tier)) CULT.UI.showScreen('main-screen');
+        const state = CULT.Game.state;
+        const realmId = state.selectedSanctumRealmId != null ? state.selectedSanctumRealmId : state.character.realmId;
+        if (CULT.Game.startSanctumChallenge(tier, realmId)) CULT.UI.showScreen('main-screen');
       });
     }
 
@@ -147,7 +149,8 @@ CULT.UI = {
     CULT.UI.el('monster-panel').classList.toggle('hidden', !hasMonster);
     if (hasMonster) {
       CULT.UI.el('monster-name').textContent = state.combat.currentMonsterName;
-      CULT.UI.el('monster-level').textContent = `Lv.${CULT.Data.getMonsterLevel(state, state.combat.currentMonsterTier)}`;
+      const levelOverride = state.combat.isEliteChallenge ? state.combat.challengeRealmId : null;
+      CULT.UI.el('monster-level').textContent = `Lv.${CULT.Data.getMonsterLevel(state, state.combat.currentMonsterTier, levelOverride)}`;
       const badge = CULT.UI.el('monster-tier-badge');
       badge.textContent = { weak: '弱', normal: '普通', elite: '精英', boss: '首领' }[state.combat.currentMonsterTier] || '';
       badge.className = `tier-badge ${state.combat.currentMonsterTier}`;
@@ -398,7 +401,7 @@ CULT.UI = {
     </div>`;
   },
 
-  // 渲染一份完整的功法列表到指定容器并绑定"修习"按钮，功法页和商店的功法区都调这个
+  // 渲染一份完整的功法列表到指定容器并绑定"修习"按钮
   renderTechniqueList(state, containerId) {
     const container = CULT.UI.el(containerId);
     if (!container) return;
@@ -698,8 +701,6 @@ CULT.UI = {
     sellEquipmentContainer.querySelectorAll('[data-sell-equipment]').forEach((btn) => {
       btn.addEventListener('click', () => CULT.Game.sellEquipment(btn.dataset.sellEquipment));
     });
-
-    CULT.UI.renderTechniqueList(state, 'shop-techniques-list');
   },
 
   renderAlchemy(state) {
@@ -747,10 +748,32 @@ CULT.UI = {
   },
 
   renderSanctums(state) {
+    const selectedRealmId = state.selectedSanctumRealmId != null ? state.selectedSanctumRealmId : state.character.realmId;
+
+    const realmListContainer = CULT.UI.el('sanctum-realm-list');
+    realmListContainer.innerHTML = CULT.REALMS.map((realm) => {
+      const isCurrent = realm.id === selectedRealmId;
+      const aboveOwnRealm = realm.id > state.character.realmId;
+      const actionHtml = isCurrent
+        ? `<span class="text-xs text-emerald-400">当前</span>`
+        : `<button class="btn-secondary text-xs px-2 py-1" data-select-sanctum-realm="${realm.id}">选择</button>`;
+      return `<div class="flex items-center justify-between panel ${isCurrent ? 'rarity-uncommon border' : ''}">
+        <div>
+          <span>${realm.name}</span>
+          ${aboveOwnRealm ? '<span class="text-xs text-rose-400 ml-1">高于当前境界</span>' : ''}
+        </div>
+        ${actionHtml}
+      </div>`;
+    }).join('');
+    realmListContainer.querySelectorAll('[data-select-sanctum-realm]').forEach((btn) => {
+      btn.addEventListener('click', () => CULT.Game.selectSanctumRealm(Number(btn.dataset.selectSanctumRealm)));
+    });
+
     const resting = state.character.restTicksRemaining > 0;
     for (const tier of ['elite', 'demonlord']) {
-      const cost = CULT.Data.getSanctumCost(state.character.realmId, tier);
-      CULT.UI.el(`sanctum-cost-text-${tier}`).textContent = `挑战花费：${cost} 灵石`;
+      const cost = CULT.Data.getSanctumCost(selectedRealmId, tier);
+      const realmName = CULT.Data.getRealm(selectedRealmId).name;
+      CULT.UI.el(`sanctum-cost-text-${tier}`).textContent = `挑战境界：${realmName} ｜ 花费：${cost} 灵石`;
       const btn = CULT.UI.el(`sanctum-challenge-btn-${tier}`);
       if (state.combat.isEliteChallenge) {
         btn.disabled = true;
